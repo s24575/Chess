@@ -2,7 +2,7 @@
 #include "Window.h"
 #include "Piece.h"
 #include <iostream>
-#include <SDL_image.h>
+#include <SDL2/SDL_image.h>
 #include <bitset>
 #include <algorithm>
 #include <cmath>

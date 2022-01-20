@@ -1,7 +1,7 @@
 #include "Window.h"
 #include "BoardState.h"
 #include <iostream>
-#include <SDL_image.h>
+#include <SDL2/SDL_image.h>
 #include "Piece.h"
 
 SDL_Renderer* Window::m_Renderer = nullptr;
