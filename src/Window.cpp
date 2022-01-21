@@ -8,7 +8,7 @@ SDL_Renderer* Window::m_Renderer = nullptr;
 int Window::m_Width = 0;
 int Window::m_Height = 0;
 
-Window::Window(const std::string &title, int width, int height)
+Window::Window(int width, int height)
 {
 	m_Width = width;
 	m_Height = height;
@@ -39,7 +39,7 @@ bool Window::init() {
 	}
 
 	m_Window = SDL_CreateWindow(
-		m_Title.c_str(),
+		"Chess",
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
 		m_Width, m_Height,

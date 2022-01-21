@@ -4,7 +4,7 @@
 
 int main(int argc, char* args[])
 {
-	Window window("Chess", 640, 640);
+	Window window(640, 640);
 	while (!window.isClosed()) {
 		window.pollEvents();
 	}

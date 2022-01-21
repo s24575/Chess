@@ -53,8 +53,6 @@ private:
 	uint8_t turn;
 	uint8_t oppositeColor;
 
-	int whiteKingPosition = 60;
-	int blackKingPosition = 4;
 	bool whiteShortCastle;
 	bool whiteLongCastle;
 	bool blackShortCastle;
