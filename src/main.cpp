@@ -1,10 +1,8 @@
 #include "Window.h"
 
-#undef main
-
-int main(int argc, char* args[])
+int main(int argc, char* argv[])
 {
-	Window window(640, 640);
+	Window window;
 	while (!window.isClosed()) {
 		window.pollEvents();
 	}

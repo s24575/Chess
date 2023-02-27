@@ -30,62 +30,50 @@ void Piece::init() {
 
 void Piece::loadImages() {
 	SDL_Surface* surface;
-	//surface = IMG_Load("images/Original/blackKing.png");
 	surface = IMG_Load("images/Lichess/bK.png");
 	blackKingTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
 	SDL_FreeSurface(surface);
 
-	//surface = IMG_Load("images/Original/whiteKing.png");
 	surface = IMG_Load("images/Lichess/wK.png");
 	whiteKingTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
 	SDL_FreeSurface(surface);
 
-	//surface = IMG_Load("images/Original/blackQueen.png");
 	surface = IMG_Load("images/Lichess/bQ.png");
 	blackQueenTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
 	SDL_FreeSurface(surface);
 
-	//surface = IMG_Load("images/Original/whiteQueen.png");
 	surface = IMG_Load("images/Lichess/wQ.png");
 	whiteQueenTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
 	SDL_FreeSurface(surface);
 
-	//surface = IMG_Load("images/Original/blackBishop.png");
 	surface = IMG_Load("images/Lichess/bB.png");
 	blackBishopTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
 	SDL_FreeSurface(surface);
 
-	//surface = IMG_Load("images/Original/whiteBishop.png");
 	surface = IMG_Load("images/Lichess/wB.png");
 	whiteBishopTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
 	SDL_FreeSurface(surface);
 
-	//surface = IMG_Load("images/Original/blackKnight.png");
 	surface = IMG_Load("images/Lichess/bN.png");
 	blackKnightTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
 	SDL_FreeSurface(surface);
 
-	//surface = IMG_Load("images/Original/whiteKnight.png");
 	surface = IMG_Load("images/Lichess/wN.png");
 	whiteKnightTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
 	SDL_FreeSurface(surface);
 
-	//surface = IMG_Load("images/Original/blackRook.png");
 	surface = IMG_Load("images/Lichess/bR.png");
 	blackRookTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
 	SDL_FreeSurface(surface);
 
-	//surface = IMG_Load("images/Original/whiteRook.png");
 	surface = IMG_Load("images/Lichess/wR.png");
 	whiteRookTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
 	SDL_FreeSurface(surface);
 
-	//surface = IMG_Load("images/Original/blackPawn.png");
 	surface = IMG_Load("images/Lichess/bP.png");
 	blackPawnTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
 	SDL_FreeSurface(surface);
 
-	//surface = IMG_Load("images/Original/whitePawn.png");
 	surface = IMG_Load("images/Lichess/wP.png");
 	whitePawnTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
 	SDL_FreeSurface(surface);

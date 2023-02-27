@@ -1,17 +1,12 @@
 #include "Window.h"
-#include "BoardState.h"
-#include <iostream>
-#include <SDL2/SDL_image.h>
 #include "Piece.h"
+#include <iostream>
+#include <SDL_image.h>
 
 SDL_Renderer* Window::m_Renderer = nullptr;
-int Window::m_Width = 0;
-int Window::m_Height = 0;
 
-Window::Window(int width, int height)
+Window::Window()
 {
-	m_Width = width;
-	m_Height = height;
 	m_Closed = !init();
 }
 
@@ -42,7 +37,7 @@ bool Window::init() {
 		"Chess",
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
-		m_Width, m_Height,
+		640, 640,
 		0
 	);
 
@@ -58,7 +53,7 @@ bool Window::init() {
 		return false;
 	}
 
-	game = new Game;
+	game = new Game();
 
 	return true;
 }
@@ -81,10 +76,7 @@ void Window::pollEvents() {
 				break;
 			}
 		case SDL_MOUSEBUTTONDOWN:
-			game->LMB(event.button, game->getBoardState());
-			break;
-		case SDL_MOUSEBUTTONUP:
-			game->LMB(event.button, game->getBoardState());
+			game->LMB(event.button);
 			break;
 		default:
 			break;
