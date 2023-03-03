@@ -9,13 +9,14 @@ public:
 	Window();
 	~Window();
 
-	void pollEvents();
-	inline bool isClosed() const { return m_Closed; }
+	void run();
+
 	static SDL_Renderer* m_Renderer;
 
 private:
 	bool init();
+
 	bool m_Closed = false;
-	SDL_Window* m_Window;
-	Game* game;
+	SDL_Window* m_Window = nullptr;
+	Game* game = nullptr;
 };
