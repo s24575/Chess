@@ -24,59 +24,50 @@ uint8_t Piece::rook;
 uint8_t Piece::pawn;
 
 void Piece::init() {
-	loadImages();
 	loadTypes();
+	loadImages();
+}
+
+void Piece::loadTypes()
+{
+	//first 6 bits for type
+	pawn = 1;
+	knight = 2;
+	bishop = 4;
+	rook = 8;
+	queen = 16;
+	king = 32;
+
+	//last 2 bits for color
+	white = 64;
+	black = 128;
+}
+
+void Piece::loadImage(const char* filepath, SDL_Texture*& texture)
+{
+	SDL_Surface* surface = IMG_Load(filepath);
+	texture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
+	SDL_FreeSurface(surface);
 }
 
 void Piece::loadImages() {
-	SDL_Surface* surface;
-	surface = IMG_Load("images/Lichess/bK.png");
-	blackKingTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
-	SDL_FreeSurface(surface);
+	loadImage("images/Lichess/wK.png", whiteKingTexture);
+	loadImage("images/Lichess/bK.png", blackKingTexture);
 
-	surface = IMG_Load("images/Lichess/wK.png");
-	whiteKingTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
-	SDL_FreeSurface(surface);
+	loadImage("images/Lichess/wQ.png", whiteQueenTexture);
+	loadImage("images/Lichess/bQ.png", blackQueenTexture);
 
-	surface = IMG_Load("images/Lichess/bQ.png");
-	blackQueenTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
-	SDL_FreeSurface(surface);
+	loadImage("images/Lichess/wB.png", whiteBishopTexture);
+	loadImage("images/Lichess/bB.png", blackBishopTexture);
 
-	surface = IMG_Load("images/Lichess/wQ.png");
-	whiteQueenTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
-	SDL_FreeSurface(surface);
+	loadImage("images/Lichess/wN.png", whiteKnightTexture);
+	loadImage("images/Lichess/bN.png", blackKnightTexture);
 
-	surface = IMG_Load("images/Lichess/bB.png");
-	blackBishopTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
-	SDL_FreeSurface(surface);
+	loadImage("images/Lichess/wR.png", whiteRookTexture);
+	loadImage("images/Lichess/bR.png", blackRookTexture);
 
-	surface = IMG_Load("images/Lichess/wB.png");
-	whiteBishopTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
-	SDL_FreeSurface(surface);
-
-	surface = IMG_Load("images/Lichess/bN.png");
-	blackKnightTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
-	SDL_FreeSurface(surface);
-
-	surface = IMG_Load("images/Lichess/wN.png");
-	whiteKnightTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
-	SDL_FreeSurface(surface);
-
-	surface = IMG_Load("images/Lichess/bR.png");
-	blackRookTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
-	SDL_FreeSurface(surface);
-
-	surface = IMG_Load("images/Lichess/wR.png");
-	whiteRookTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
-	SDL_FreeSurface(surface);
-
-	surface = IMG_Load("images/Lichess/bP.png");
-	blackPawnTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
-	SDL_FreeSurface(surface);
-
-	surface = IMG_Load("images/Lichess/wP.png");
-	whitePawnTexture = SDL_CreateTextureFromSurface(Window::m_Renderer, surface);
-	SDL_FreeSurface(surface);
+	loadImage("images/Lichess/wP.png", whitePawnTexture);
+	loadImage("images/Lichess/bP.png", blackPawnTexture);
 }
 
 void Piece::destroyImages() {
@@ -97,18 +88,4 @@ void Piece::destroyImages() {
 
 	SDL_DestroyTexture(whiteQueenTexture);
 	SDL_DestroyTexture(blackQueenTexture);
-}
-
-void Piece::loadTypes() {
-	//first 6 bits for type
-	pawn = 1;
-	knight = 2;
-	bishop = 4;
-	rook = 8;
-	queen = 16;
-	king = 32;
-
-	//last 2 bits for color
-	white = 64;
-	black = 128;
 }

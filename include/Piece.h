@@ -7,9 +7,15 @@ class Piece
 {
 public:
 	static void init();
-	static void loadImages();
-	static void loadTypes();
 	static void destroyImages();
+
+private:
+	static void loadTypes();
+	static void loadImages();
+
+	static void loadImage(const char* filepath, SDL_Texture*& texture);
+
+public:
 	static SDL_Texture* blackKingTexture;
 	static SDL_Texture* whiteKingTexture;
 	static SDL_Texture* blackKnightTexture;
