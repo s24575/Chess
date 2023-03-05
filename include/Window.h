@@ -18,5 +18,5 @@ private:
 
 	bool m_Closed = false;
 	SDL_Window* m_Window = nullptr;
-	Game* game = nullptr;
+	Game* m_Game = nullptr;
 };

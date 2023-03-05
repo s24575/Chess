@@ -60,7 +60,7 @@ bool Window::init()
 		return false;
 	}
 
-	game = new Game();
+	m_Game = new Game();
 
 	return true;
 }
@@ -85,15 +85,17 @@ void Window::run()
 							m_Closed = true;
 							break;
 						case SDLK_r:
-							game->printPositions();
+							m_Game->printPositions();
 							break;
 					}
 				case SDL_MOUSEBUTTONDOWN:
-					game->LMB(event.button);
+					m_Game->handleMouseButton(event.button);
 					break;
 				default:
 					break;
 			}
 		}
+
+		SDL_RenderPresent(m_Renderer);
 	}
 }

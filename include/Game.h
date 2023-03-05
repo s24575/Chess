@@ -18,11 +18,11 @@ public:
 	void refreshAllSquares();
 
 	void hightlightPiece(int x, int y);
-	void highlightAttacks(int square);
+	void highlightAttack(int x, int y);
 
 	void LoadFen(std::string FEN);
 	SDL_Texture* checkPiece(uint8_t piece);
-	void LMB(SDL_MouseButtonEvent& b);
+	void handleMouseButton(SDL_MouseButtonEvent& b);
 	void attemptPickupPiece(int x, int y);
 	void attemptPlacePiece(int x, int y);
 	void printPositions();

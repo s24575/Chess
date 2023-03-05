@@ -2,17 +2,19 @@
 
 #include <stdint.h>
 
-class BoardState {
+class BoardState
+{
 public:
 	BoardState();
 	BoardState(const BoardState& other);
 	~BoardState();
 
-	inline uint8_t** getBoard() const { return board; }
 	void movePiece(int StartX, int StartY, int FinishX, int FinishY);
 
+	inline uint8_t** getBoard() const { return board; }
+
 	void setEnPassant(int position) { enPassant = position; }
-	inline int getEnPassant() { return enPassant; }
+	inline int getEnPassant() const { return enPassant; }
 
 	void setWhiteKing(int position) { whiteKing = position; }
 	void setBlackKing(int position) { blackKing = position; }
@@ -27,6 +29,7 @@ public:
 	inline bool getWhiteLongCastle() const { return whiteLongCastle; }
 	inline bool getBlackShortCastle() const { return blackShortCastle; }
 	inline bool getBlackLongCastle() const { return blackLongCastle; }
+
 private:
 	uint8_t** board = nullptr;
 
