@@ -71,6 +71,7 @@ void Window::run()
 
 	while (!m_Closed)
 	{
+		// INPUT/UPDATE
 		if (SDL_WaitEvent(&event))
 		{
 			switch (event.type)
@@ -96,6 +97,8 @@ void Window::run()
 			}
 		}
 
+		// RENDER
+		m_Game->refreshAllSquares();
 		SDL_RenderPresent(m_Renderer);
 	}
 }
