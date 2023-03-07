@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Game.h"
-#include "SDL.h"
+#include "SDL2/SDL.h"
 
 class Window
 {

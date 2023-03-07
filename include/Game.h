@@ -2,7 +2,7 @@
 
 #include "BoardState.h"
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 #include <string>
 #include <vector>
@@ -28,13 +28,14 @@ public:
 	void attemptPickupPiece(int x, int y);
 	void attemptPlacePiece(int x, int y);
 	void printPositions();
-	std::unordered_set<int> calculatePseudoLegalMoves(int, int, BoardState* boardstate);
-	void checkForSpecialPawnMoves(int StartX, int StartY, int FinishX, int FinishY, BoardState* boardstate);
+
+	std::unordered_set<int> calculatePseudoLegalMoves(int x, int y, BoardState* board);
+	void checkForSpecialPawnMoves(int startX, int startY, int finishX, int finishY, BoardState* board);
 	void checkForCastle(int x, int y, BoardState* board);
-	void disableCastle(int StartX, int StartY, int FinishX, int FinishY, BoardState* boardstate);
-	std::unordered_set<int> calculateLegalMoves(int x, int y);
-	bool checkForCheck(int x, int y, BoardState* board);
-	void checkForCheckmate();
+	void disableCastle(int StartX, int StartY, int FinishX, int FinishY, BoardState* board);
+	std::unordered_set<int> calculateLegalMoves(int x, int y, BoardState* board);
+	bool checkForCheck(BoardState* board);
+	bool checkForCheckmate(BoardState* board);
 
 	bool pickedUp = false;
 private:
