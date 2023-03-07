@@ -60,6 +60,8 @@ bool Window::init()
 		return false;
 	}
 
+	Piece::init();
+
 	m_Game = new Game();
 
 	return true;

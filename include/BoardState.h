@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <string>
 
 class BoardState
 {
@@ -10,8 +11,14 @@ public:
 	~BoardState();
 
 	void movePiece(int StartX, int StartY, int FinishX, int FinishY);
+	void loadFEN(const std::string& FEN);
 
 	inline uint8_t** getBoard() const { return board; }
+
+	void setCurrentTurn(uint8_t turn) { currentTurn = turn; }
+	inline uint8_t getCurrentTurn() { return currentTurn; }
+	void setOppositeTurn(uint8_t turn) { oppositeTurn = turn; }
+	inline uint8_t getOppositeTurn() { return oppositeTurn; }
 
 	void setEnPassant(int position) { enPassant = position; }
 	inline int getEnPassant() const { return enPassant; }
@@ -32,6 +39,9 @@ public:
 
 private:
 	uint8_t** board = nullptr;
+
+	uint8_t currentTurn = 0;
+	uint8_t oppositeTurn = 0;
 
 	int enPassant = -1;
 

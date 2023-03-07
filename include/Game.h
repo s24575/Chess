@@ -22,7 +22,6 @@ public:
 	void highlightTile(int x, int y);
 	void highlightAttack(int x, int y);
 
-	void loadFEN(std::string FEN);
 	SDL_Texture* checkPiece(uint8_t piece);
 	void handleMouseButton(SDL_MouseButtonEvent& b);
 	void attemptPickupPiece(int x, int y);
@@ -39,7 +38,7 @@ public:
 
 	bool pickedUp = false;
 private:
-	BoardState* currentBoardState = nullptr;
+	BoardState currentBoardState;
 
 	SDL_Color lightColor = { 241, 217, 181, 255 };
 	SDL_Color darkColor = { 181, 136, 99, 255 };
@@ -47,14 +46,10 @@ private:
 	SDL_Color highlightLightColor = { 130, 151, 105, 0 };
 	SDL_Color highlightDarkColor = { 100, 111, 64, 0 };
 
-
-
 	SDL_Rect pieceTextures[8][8];
 
 	std::unordered_set<int> legalMoves;
 
 	int movingPieceX = -1;
 	int movingPieceY = -1;
-	uint8_t turn;
-	uint8_t oppositeColor;
 };

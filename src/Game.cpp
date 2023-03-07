@@ -16,15 +16,12 @@ constexpr auto TEST_FEN2 = "8/8/8/2k5/2pP4/8/B7/4K3 w - d3 0 3";
 
 Game::Game()
 {
-	Piece::init();
-
-	currentBoardState = new BoardState();
-	loadFEN(DEFAULT_FEN);
+	currentBoardState.loadFEN(DEFAULT_FEN);
 }
 
 Game::~Game()
 {
-	delete currentBoardState;
+
 }
 
 void Game::refreshTile(int x, int y)
@@ -37,7 +34,7 @@ void Game::refreshTile(int x, int y)
 
 void Game::refreshPiece(int x, int y)
 {
-	uint8_t currentPiece = currentBoardState->getBoard()[x][y];
+	uint8_t currentPiece = currentBoardState.getBoard()[x][y];
 
 	if (currentPiece)
 	{
@@ -104,122 +101,6 @@ void Game::highlightAttack(int x, int y)
 	}
 }
 
-void Game::loadFEN(std::string FEN)
-{
-	int index = 0;
-	int x;
-
-	uint8_t** board = currentBoardState->getBoard();
-	//for (int y = 0; y < 8; ++y) {// -> black at the bottom
-	for (int y = 7; y > -1; --y)
-	{
-		x = 0;
-		while (FEN[index] != '/' && FEN[index] != ' ')
-		{
-			if (isdigit(FEN[index]))
-			{
-				x += FEN[index] - '0';
-				index++;
-			}
-			else
-			{
-				switch (FEN[index])
-				{
-					case 'p':
-						board[x][y] = Piece::white | Piece::pawn;
-						break;
-					case 'P':
-						board[x][y] = Piece::black | Piece::pawn;
-						break;
-					case 'r':
-						board[x][y] = Piece::white | Piece::rook;
-						break;
-					case 'R':
-						board[x][y] = Piece::black | Piece::rook;
-						break;
-					case 'b':
-						board[x][y] = Piece::white | Piece::bishop;
-						break;
-					case 'B':
-						board[x][y] = Piece::black | Piece::bishop;
-						break;
-					case 'n':
-						board[x][y] = Piece::white | Piece::knight;
-						break;
-					case 'N':
-						board[x][y] = Piece::black | Piece::knight;
-						break;
-					case 'k':
-						board[x][y] = Piece::white | Piece::king;
-						currentBoardState->setWhiteKing(x + (8 * y));
-						break;
-					case 'K':
-						board[x][y] = Piece::black | Piece::king;
-						currentBoardState->setBlackKing(x + (8 * y));
-						break;
-					case 'q':
-						board[x][y] = Piece::white | Piece::queen;
-						break;
-					case 'Q':
-						board[x][y] = Piece::black | Piece::queen;
-						break;
-				}
-				index++;
-				x++;
-			}
-		}
-		index++;
-	}
-
-	if (FEN[index] == 'w')
-	{
-		turn = Piece::white;
-		oppositeColor = Piece::black;
-	}
-	else if (FEN[index] == 'b')
-	{
-		turn = Piece::black;
-		oppositeColor = Piece::white;
-	}
-	index += 2;
-
-	currentBoardState->setWhiteShortCastle(false);
-	currentBoardState->setWhiteLongCastle(false);
-	currentBoardState->setBlackShortCastle(false);
-	currentBoardState->setBlackLongCastle(false);
-
-	while (FEN[index] != ' ')
-	{
-		switch (FEN[index])
-		{
-			case 'K':
-				currentBoardState->setWhiteShortCastle(true);
-				break;
-			case 'Q':
-				currentBoardState->setWhiteLongCastle(true);
-				break;
-			case 'k':
-				currentBoardState->setBlackShortCastle(true);
-				break;
-			case 'q':
-				currentBoardState->setBlackLongCastle(true);
-				break;
-		}
-		index++;
-	}
-	index++;
-
-	if (FEN[index] != '-')
-	{
-		int x, y;
-		x = int(FEN[index]) - 'a';
-		index++;
-		y = int(FEN[index]) - '1';
-		currentBoardState->setEnPassant(x + (8 * y));
-	}
-	index++;
-}
-
 SDL_Texture* Game::checkPiece(uint8_t piece)
 {
 	if (piece & Piece::black)
@@ -261,7 +142,7 @@ void Game::printPositions()
 	{
 		for (int x = 0; x < 8; x++)
 		{
-			std::bitset<8> bits(currentBoardState->getBoard()[x][y]);
+			std::bitset<8> bits(currentBoardState.getBoard()[x][y]);
 			std::cout << bits << ' ';
 		}
 		std::cout << '\n';
@@ -295,9 +176,9 @@ void Game::handleMouseButton(SDL_MouseButtonEvent& b)
 
 void Game::attemptPickupPiece(int x, int y)
 {
-	if (currentBoardState->getBoard()[x][y] & turn)
+	if (currentBoardState.getBoard()[x][y] & currentBoardState.getCurrentTurn())
 	{
-		legalMoves = calculateLegalMoves(x, y, currentBoardState);
+		legalMoves = calculateLegalMoves(x, y, &currentBoardState);
 		if (!legalMoves.empty())
 		{
 			pickedUp = true;
@@ -314,62 +195,62 @@ void Game::attemptPlacePiece(int FinishX, int FinishY)
 	if (movingPieceX == FinishX && movingPieceY == FinishY)
 		return;
 
-	uint8_t cursorPiece = currentBoardState->getBoard()[movingPieceX][movingPieceY];
+	uint8_t cursorPiece = currentBoardState.getBoard()[movingPieceX][movingPieceY];
 
-	if (currentBoardState->getBoard()[FinishX][FinishY] & turn)
+	if (currentBoardState.getBoard()[FinishX][FinishY] & currentBoardState.getCurrentTurn())
 	{
 		attemptPickupPiece(FinishX, FinishY);
 	}
 	else if (legalMoves.count(FinishX + (8 * FinishY)))
 	{
-		currentBoardState->movePiece(movingPieceX, movingPieceY, FinishX, FinishY);
+		currentBoardState.movePiece(movingPieceX, movingPieceY, FinishX, FinishY);
 
 		if (cursorPiece & Piece::pawn)
 		{
-			checkForSpecialPawnMoves(movingPieceX, movingPieceY, FinishX, FinishY, currentBoardState);
+			checkForSpecialPawnMoves(movingPieceX, movingPieceY, FinishX, FinishY, &currentBoardState);
 		}
 		else if (cursorPiece & Piece::king)
 		{
-			checkForCastle(FinishX, FinishY, currentBoardState);
+			checkForCastle(FinishX, FinishY, &currentBoardState);
 			if (cursorPiece & Piece::white)
 			{
-				currentBoardState->setWhiteKing(FinishX + (8 * FinishY));
-				currentBoardState->setWhiteShortCastle(false);
-				currentBoardState->setWhiteLongCastle(false);
+				currentBoardState.setWhiteKing(FinishX + (8 * FinishY));
+				currentBoardState.setWhiteShortCastle(false);
+				currentBoardState.setWhiteLongCastle(false);
 			}
 			else
 			{
-				currentBoardState->setBlackKing(FinishX + (8 * FinishY));
-				currentBoardState->setBlackShortCastle(false);
-				currentBoardState->setBlackLongCastle(false);
+				currentBoardState.setBlackKing(FinishX + (8 * FinishY));
+				currentBoardState.setBlackShortCastle(false);
+				currentBoardState.setBlackLongCastle(false);
 			}
 		}
 
-		disableCastle(movingPieceX, movingPieceY, FinishX, FinishY, currentBoardState);
+		disableCastle(movingPieceX, movingPieceY, FinishX, FinishY, &currentBoardState);
 
-		bool isCheckmate = checkForCheckmate(currentBoardState);
+		bool isCheckmate = checkForCheckmate(&currentBoardState);
 
 		if(isCheckmate){
-			if (turn & Piece::white)
+			if (currentBoardState.getCurrentTurn() & Piece::white)
 			{
 				std::cout << "White won!\n";
 			}
-			else if (turn & Piece::black)
+			else if (currentBoardState.getCurrentTurn() & Piece::black)
 			{
 				std::cout << "Black won!\n";
 			}
 		}
 
-		if (turn == Piece::white)
-		{
-			turn = Piece::black;
-			oppositeColor = Piece::white;
-		}
-		else if (turn == Piece::black)
-		{
-			turn = Piece::white;
-			oppositeColor = Piece::black;
-		}
+		// if (currentBoardState.getCurrentTurn() == Piece::white)
+		// {
+		// 	turn = Piece::black;
+		// 	oppositeColor = Piece::white;
+		// }
+		// else if (currentBoardState.getCurrentTurn() == Piece::black)
+		// {
+		// 	turn = Piece::white;
+		// 	oppositeColor = Piece::black;
+		// }
 	}
 }
 
@@ -709,14 +590,14 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 
 		if (pieceType & Piece::white)
 		{
-			if (currentBoardState->getWhiteShortCastle())
+			if (currentBoardState.getWhiteShortCastle())
 			{
 				if (board[5][7] == 0 && board[6][7] == 0)
 				{
 					possibleMoves.insert(x + 2 + (8 * y));
 				}
 			}
-			if (currentBoardState->getWhiteLongCastle())
+			if (currentBoardState.getWhiteLongCastle())
 			{
 				if (board[3][7] == 0 && board[2][7] == 0 && board[1][7] == 0)
 				{
@@ -726,14 +607,14 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 		}
 		else if (pieceType & Piece::black)
 		{
-			if (currentBoardState->getBlackShortCastle())
+			if (currentBoardState.getBlackShortCastle())
 			{
 				if (board[5][0] == 0 && board[6][0] == 0)
 				{
 					possibleMoves.insert(x + 2 + (8 * y));
 				}
 			}
-			if (currentBoardState->getBlackLongCastle())
+			if (currentBoardState.getBlackLongCastle())
 			{
 				if (board[3][0] == 0 && board[2][0] == 0 && board[1][0] == 0)
 				{
@@ -754,34 +635,34 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 
 std::unordered_set<int> Game::calculateLegalMoves(int PieceX, int PieceY, BoardState* boardState)
 {
-	std::unordered_set<int> pseudoLegalMoves = calculatePseudoLegalMoves(PieceX, PieceY, currentBoardState);
+	std::unordered_set<int> pseudoLegalMoves = calculatePseudoLegalMoves(PieceX, PieceY, &currentBoardState);
 	std::unordered_set<int> validLegalMoves;
 
-	uint8_t currentPiece = currentBoardState->getBoard()[PieceX][PieceY];
+	uint8_t currentPiece = currentBoardState.getBoard()[PieceX][PieceY];
 	uint8_t enemy = currentPiece & (!Piece::white | !Piece::black);
 
 	if (currentPiece & Piece::king)
 	{
-		if (checkForCheck(currentBoardState))
+		if (checkForCheck(&currentBoardState))
 		{
 			if (currentPiece & Piece::white)
 			{
-				if (currentBoardState->getWhiteShortCastle())
+				if (currentBoardState.getWhiteShortCastle())
 				{
 					pseudoLegalMoves.erase(62);
 				}
-				if (currentBoardState->getWhiteLongCastle())
+				if (currentBoardState.getWhiteLongCastle())
 				{
 					pseudoLegalMoves.erase(58);
 				}
 			}
 			else if (currentPiece & Piece::black)
 			{
-				if (currentBoardState->getBlackShortCastle())
+				if (currentBoardState.getBlackShortCastle())
 				{
 					pseudoLegalMoves.erase(6);
 				}
-				if (currentBoardState->getBlackLongCastle())
+				if (currentBoardState.getBlackLongCastle())
 				{
 					pseudoLegalMoves.erase(2);
 				}
@@ -793,7 +674,7 @@ std::unordered_set<int> Game::calculateLegalMoves(int PieceX, int PieceY, BoardS
 	{
 		bool isLegal = true;
 
-		BoardState* boardStateCopy = new BoardState(*currentBoardState);
+		BoardState* boardStateCopy = new BoardState(currentBoardState);
 
 		int destinationX = move % 8;
 		int destinationY = move / 8;
@@ -864,7 +745,7 @@ void Game::checkForSpecialPawnMoves(int StartX, int StartY, int FinishX, int Fin
 		if (FinishX + (8 * FinishY) == boardState->getEnPassant())
 		{
 			boardState->getBoard()[FinishX][FinishY + 1] = 0;
-			if (boardState == currentBoardState)
+			if (boardState == &currentBoardState)
 			{
 				std::cout << FinishX << ' ' << FinishY + 1 << '\n';
 			}
@@ -876,7 +757,7 @@ void Game::checkForSpecialPawnMoves(int StartX, int StartY, int FinishX, int Fin
 		}
 		else if (FinishY == 0)
 		{
-			if (boardState == currentBoardState)
+			if (boardState == &currentBoardState)
 			{
 				std::cout << "Choose your piece (queen/knight/rook/bishop): ";
 				std::string promotionPiece;
@@ -906,7 +787,7 @@ void Game::checkForSpecialPawnMoves(int StartX, int StartY, int FinishX, int Fin
 		if (FinishX + (8 * FinishY) == boardState->getEnPassant())
 		{
 			boardState->getBoard()[FinishX][FinishY - 1] = 0;
-			if (boardState == currentBoardState)
+			if (boardState == &currentBoardState)
 			{
 				std::cout << FinishX << ' ' << FinishY - 1 << '\n';
 			}
@@ -918,7 +799,7 @@ void Game::checkForSpecialPawnMoves(int StartX, int StartY, int FinishX, int Fin
 		}
 		else if (FinishY == 7)
 		{
-			if (boardState == currentBoardState)
+			if (boardState == &currentBoardState)
 			{
 				std::cout << "Choose your piece (queen/knight/rook/bishop): ";
 				std::string promotionPiece;
@@ -985,22 +866,22 @@ void Game::disableCastle(int StartX, int StartY, int FinishX, int FinishY, Board
 	}
 }
 
-bool Game::checkForCheck(BoardState* boardState)
+bool Game::checkForCheck(BoardState* board)
 {
 	for (int y = 0; y < 8; y++)
 	{
 		for (int x = 0; x < 8; x++)
 		{
-			uint8_t currentPiece = boardState->getBoard()[x][y];
+			uint8_t currentPiece = board->getBoard()[x][y];
 
-			if (currentPiece & oppositeColor && !(currentPiece & Piece::king))
+			if (currentPiece & board->getOppositeTurn() && !(currentPiece & Piece::king))
 			{
-				std::unordered_set<int> attackedTiles = calculatePseudoLegalMoves(x, y, boardState);
-				if (turn & Piece::white && attackedTiles.count(boardState->getWhiteKing()))
+				std::unordered_set<int> attackedTiles = calculatePseudoLegalMoves(x, y, board);
+				if (board->getCurrentTurn() & Piece::white && attackedTiles.count(board->getWhiteKing()))
 				{
 					return true;
 				}
-				if (turn & Piece::black && attackedTiles.count(boardState->getBlackKing()))
+				if (board->getCurrentTurn() & Piece::black && attackedTiles.count(board->getBlackKing()))
 				{
 					return true;
 				}
@@ -1024,17 +905,17 @@ bool Game::checkForCheckmate(BoardState* board)
 		{
 			uint8_t currentPiece = board->getBoard()[x][y];
 
-			if (currentPiece & turn)
+			if (currentPiece & board->getCurrentTurn())
 			{
 				std::unordered_set<int> v = calculatePseudoLegalMoves(x, y, board);
 
-				if (turn == Piece::white && v.count(board->getBlackKing()) || turn == Piece::black && v.count(board->getWhiteKing()))
+				if (board->getCurrentTurn() == Piece::white && v.count(board->getBlackKing()) || board->getCurrentTurn() == Piece::black && v.count(board->getWhiteKing()))
 				{
 					attackingPieces.push_back(x + (8 * y));
 					isCheck = true;
 				}
 			}
-			else if (currentPiece & oppositeColor)
+			else if (currentPiece & board->getOppositeTurn())
 			{
 				enemyPieces.push_back(x + (8 * y));
 			}
