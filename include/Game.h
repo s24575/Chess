@@ -14,6 +14,8 @@ public:
 	Game();
 	~Game();
 
+	void init();
+
 	void refreshTile(int x, int y);
 	void refreshPiece(int x, int y);
 	void refreshSquare(int x, int y);
@@ -46,7 +48,7 @@ private:
 	SDL_Color highlightLightColor = { 130, 151, 105, 0 };
 	SDL_Color highlightDarkColor = { 100, 111, 64, 0 };
 
-	SDL_Rect pieceTextures[8][8];
+	//SDL_Rect pieceTextures[8][8];
 
 	std::unordered_set<int> legalMoves;
 

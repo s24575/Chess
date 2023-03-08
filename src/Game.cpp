@@ -16,6 +16,11 @@ constexpr auto TEST_FEN2 = "8/8/8/2k5/2pP4/8/B7/4K3 w - d3 0 3";
 
 Game::Game()
 {
+
+}
+
+void Game::init()
+{
 	currentBoardState.loadFEN(DEFAULT_FEN);
 }
 

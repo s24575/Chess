@@ -62,7 +62,8 @@ bool Window::init()
 
 	Piece::init();
 
-	m_Game = new Game();
+	// The game has to be initialized after the pieces
+	m_Game.init();
 
 	return true;
 }
@@ -88,11 +89,11 @@ void Window::run()
 							m_Closed = true;
 							break;
 						case SDLK_r:
-							m_Game->printPositions();
+							m_Game.printPositions();
 							break;
 					}
 				case SDL_MOUSEBUTTONDOWN:
-					m_Game->handleMouseButton(event.button);
+					m_Game.handleMouseButton(event.button);
 					break;
 				default:
 					break;
@@ -100,7 +101,7 @@ void Window::run()
 		}
 
 		// RENDER
-		m_Game->refreshAllSquares();
+		m_Game.refreshAllSquares();
 		SDL_RenderPresent(m_Renderer);
 	}
 }
