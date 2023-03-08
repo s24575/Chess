@@ -22,14 +22,14 @@ public:
 	void highlightTile(int x, int y);
 	void highlightAttack(int x, int y);
 
-	SDL_Texture* checkPiece(uint8_t piece);
+	SDL_Texture* getPieceTexture(uint8_t piece);
 	void handleMouseButton(SDL_MouseButtonEvent& b);
 	void attemptPickupPiece(int x, int y);
 	void attemptPlacePiece(int x, int y);
 	void printPositions();
 
 	std::unordered_set<int> calculatePseudoLegalMoves(int x, int y, BoardState* board);
-	void checkForSpecialPawnMoves(int startX, int startY, int finishX, int finishY, BoardState* board);
+	void checkForSpecialPawnMoves(int startY, int finishX, int finishY, BoardState* board);
 	void checkForCastle(int x, int y, BoardState* board);
 	void disableCastle(int StartX, int StartY, int FinishX, int FinishY, BoardState* board);
 	std::unordered_set<int> calculateLegalMoves(int x, int y, BoardState* board);
