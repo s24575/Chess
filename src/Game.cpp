@@ -236,11 +236,11 @@ void Game::attemptPlacePiece(int FinishX, int FinishY)
 		bool isCheckmate = checkForCheckmate(&currentBoardState);
 
 		if(isCheckmate){
-			if (currentBoardState.getCurrentTurn() & Piece::white)
+			if (currentBoardState.getOppositeTurn() & Piece::white)
 			{
 				std::cout << "White won!\n";
 			}
-			else if (currentBoardState.getCurrentTurn() & Piece::black)
+			else if (currentBoardState.getOppositeTurn() & Piece::black)
 			{
 				std::cout << "Black won!\n";
 			}
@@ -620,33 +620,24 @@ std::unordered_set<int> Game::calculateLegalMoves(int PieceX, int PieceY, BoardS
 	std::unordered_set<int> validLegalMoves;
 
 	uint8_t currentPiece = board->getBoard()[PieceX][PieceY];
-	uint8_t enemy = currentPiece & (!Piece::white | !Piece::black);
+
+	// use color mask and get the opposite
+	uint8_t enemy = (currentPiece & (Piece::white | Piece::black)) ^ (Piece::white | Piece::black);
 
 	if (currentPiece & Piece::king)
 	{
 		if (checkForCheck(board))
 		{
+			// disable castling
 			if (currentPiece & Piece::white)
 			{
-				if (board->getWhiteShortCastle())
-				{
-					pseudoLegalMoves.erase(62);
-				}
-				if (board->getWhiteLongCastle())
-				{
-					pseudoLegalMoves.erase(58);
-				}
+				pseudoLegalMoves.erase(62);
+				pseudoLegalMoves.erase(58);
 			}
 			else if (currentPiece & Piece::black)
 			{
-				if (board->getBlackShortCastle())
-				{
-					pseudoLegalMoves.erase(6);
-				}
-				if (board->getBlackLongCastle())
-				{
-					pseudoLegalMoves.erase(2);
-				}
+				pseudoLegalMoves.erase(6);
+				pseudoLegalMoves.erase(2);
 			}
 		}
 	}
@@ -655,50 +646,48 @@ std::unordered_set<int> Game::calculateLegalMoves(int PieceX, int PieceY, BoardS
 	{
 		bool isLegal = true;
 
-		BoardState* boardStateCopy = new BoardState(*board);
+		BoardState boardStateCopy(*board);
 
 		int destinationX = move % 8;
 		int destinationY = move / 8;
 
-		boardStateCopy->movePiece(PieceX, PieceY, destinationX, destinationY);
+		boardStateCopy.movePiece(PieceX, PieceY, destinationX, destinationY);
 
-		uint8_t destinationPiece = boardStateCopy->getBoard()[destinationX][destinationY];
-
-		if (destinationPiece & Piece::pawn)
+		if (currentPiece & Piece::pawn)
 		{
-			checkForSpecialPawnMoves(PieceY, destinationX, destinationY, boardStateCopy);
+			checkForSpecialPawnMoves(PieceY, destinationX, destinationY, &boardStateCopy);
 		}
-		else if (destinationPiece & Piece::king)
+		else if (currentPiece & Piece::king)
 		{
-			if (destinationPiece & Piece::white)
+			if (currentPiece & Piece::white)
 			{
-				boardStateCopy->setWhiteKing(destinationX + (8 * destinationY));
+				boardStateCopy.setWhiteKing(destinationX + (8 * destinationY));
 			}
-			else if (destinationPiece & Piece::black)
+			else if (currentPiece & Piece::black)
 			{
-				boardStateCopy->setBlackKing(destinationX + (8 * destinationY));
+				boardStateCopy.setBlackKing(destinationX + (8 * destinationY));
 			}
-			checkForCastle(destinationX, destinationY, boardStateCopy);
+			checkForCastle(destinationX, destinationY, &boardStateCopy);
 		}
 
 		for (int y = 0; y < 8; ++y)
 		{
 			for (int x = 0; x < 8; ++x)
 			{
-				if (boardStateCopy->getBoard()[x][y] & enemy)
+				if (boardStateCopy.getBoard()[x][y] & enemy)
 				{
-					std::unordered_set<int> v = calculatePseudoLegalMoves(x, y, boardStateCopy);
+					std::unordered_set<int> attackedSquares = calculatePseudoLegalMoves(x, y, &boardStateCopy);
 
-					if (destinationPiece & Piece::white)
+					if (currentPiece & Piece::white)
 					{
-						if (pseudoLegalMoves.count(boardStateCopy->getWhiteKing()))
+						if (attackedSquares.count(boardStateCopy.getWhiteKing()))
 						{
 							isLegal = false;
 						}
 					}
-					if (destinationPiece & Piece::black)
+					if (currentPiece & Piece::black)
 					{
-						if (pseudoLegalMoves.count(boardStateCopy->getBlackKing()))
+						if (attackedSquares.count(boardStateCopy.getBlackKing()))
 						{
 							isLegal = false;
 						}
@@ -706,7 +695,6 @@ std::unordered_set<int> Game::calculateLegalMoves(int PieceX, int PieceY, BoardS
 				}
 			}
 		}
-		delete boardStateCopy;
 
 		if (isLegal)
 		{
@@ -850,11 +838,7 @@ bool Game::checkForCheck(BoardState* board)
 			if (currentPiece & board->getOppositeTurn() && !(currentPiece & Piece::king))
 			{
 				std::unordered_set<int> attackedTiles = calculatePseudoLegalMoves(x, y, board);
-				if (board->getCurrentTurn() & Piece::white && attackedTiles.count(board->getWhiteKing()))
-				{
-					return true;
-				}
-				if (board->getCurrentTurn() & Piece::black && attackedTiles.count(board->getBlackKing()))
+				if (board->getCurrentTurn() & Piece::white && attackedTiles.count(board->getWhiteKing()) || board->getCurrentTurn() & Piece::black && attackedTiles.count(board->getBlackKing()))
 				{
 					return true;
 				}
@@ -866,51 +850,25 @@ bool Game::checkForCheck(BoardState* board)
 
 bool Game::checkForCheckmate(BoardState* board)
 {
-	std::vector<int> enemyPieces;
-	std::vector<int> attackingPieces;
-
-	bool isCheck = false;
-	int counter = 0;
-
-	for (int y = 0; y < 8; ++y)
+	for (int y = 0; y < 8; y++)
 	{
-		for (int x = 0; x < 8; ++x)
+		for (int x = 0; x < 8; x++)
 		{
 			uint8_t currentPiece = board->getBoard()[x][y];
 
 			if (currentPiece & board->getCurrentTurn())
 			{
-				std::unordered_set<int> v = calculatePseudoLegalMoves(x, y, board);
+				auto moves = calculateLegalMoves(x, y, board);
 
-				if ((board->getCurrentTurn() == Piece::white && v.count(board->getBlackKing())) || (board->getCurrentTurn() == Piece::black && v.count(board->getWhiteKing())))
+				if (!moves.empty())
 				{
-					attackingPieces.push_back(x + (8 * y));
-					isCheck = true;
+					return false;
 				}
 			}
-			else if (currentPiece & board->getOppositeTurn())
-			{
-				enemyPieces.push_back(x + (8 * y));
-			}
 		}
 	}
-	if (isCheck)
-	{
-		for (int position : enemyPieces)
-		{
-			int positionX = position % 8;
-			int positionY = position / 8;
-			std::unordered_set<int> v = calculateLegalMoves(positionX, positionY, board);
-			if (!v.empty())
-			{
-				counter += 1;
-			}
-		}
 
-		return !counter;
-	}
-
-	return false;
+	return true;
 }
 
 // highlight checks
