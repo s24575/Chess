@@ -12,23 +12,19 @@ class Game
 {
 public:
 	Game();
-	~Game();
 
 	void init();
 
-	void refreshTile(int x, int y);
+	void refreshTile(int x, int y, bool highlight);
 	void refreshPiece(int x, int y);
 	void refreshSquare(int x, int y);
 	void refreshAllSquares();
-
-	void highlightTile(int x, int y);
 	void highlightAttack(int x, int y);
 
 	SDL_Texture* getPieceTexture(uint8_t piece);
 	void handleMouseButton(SDL_MouseButtonEvent& b);
 	void attemptPickupPiece(int x, int y);
 	void attemptPlacePiece(int x, int y);
-	void printPositions();
 
 	std::unordered_set<int> calculatePseudoLegalMoves(int x, int y, BoardState* board);
 	void checkForSpecialPawnMoves(int startY, int finishX, int finishY, BoardState* board);
@@ -47,8 +43,6 @@ private:
 
 	SDL_Color highlightLightColor = { 130, 151, 105, 0 };
 	SDL_Color highlightDarkColor = { 100, 111, 64, 0 };
-
-	//SDL_Rect pieceTextures[8][8];
 
 	std::unordered_set<int> legalMoves;
 

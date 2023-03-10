@@ -19,17 +19,17 @@ BoardState::BoardState(const BoardState& other) :
 	blackShortCastle(other.blackShortCastle),
 	blackLongCastle(other.blackLongCastle)
 {
-	board = new uint8_t * [8];
-	for (int i = 0; i < 8; ++i)
+	board = new uint8_t*[8];
+	for (int i = 0; i < 8; i++)
 	{
 		board[i] = new uint8_t[8];
 	}
-	uint8_t** otherBoard = other.getBoard();
+
 	for (int y = 0; y < 8; ++y)
 	{
 		for (int x = 0; x < 8; ++x)
 		{
-			board[y][x] = otherBoard[y][x];
+			board[y][x] = other.getPiece(x, y);
 		}
 	}
 }
@@ -45,97 +45,95 @@ BoardState::~BoardState()
 
 void BoardState::movePiece(int StartX, int StartY, int FinishX, int FinishY)
 {
-	board[FinishX][FinishY] = board[StartX][StartY];
-	board[StartX][StartY] = 0;
+	board[FinishY][FinishX] = board[StartY][StartX];
+	board[StartY][StartX] = 0;
 
 	std::swap(currentTurn, oppositeTurn);
 }
 
 void BoardState::loadFEN(const std::string& FEN){
-	int index = 0;
-	int x;
+	int i = 0;
 
-	//for (int y = 0; y < 8; ++y) {// -> black at the bottom
-	for (int y = 7; y > -1; --y)
+	for (int y = 7; y >= 0; y--)
 	{
-		x = 0;
-		while (FEN[index] != '/' && FEN[index] != ' ')
+		int x = 0;
+		while (FEN[i] != '/' && FEN[i] != ' ')
 		{
-			if (isdigit(FEN[index]))
+			if (isdigit(FEN[i]))
 			{
-				x += FEN[index] - '0';
-				index++;
+				x += FEN[i] - '0';
+				i++;
 			}
 			else
 			{
-				switch (FEN[index])
+				switch (FEN[i])
 				{
 					case 'p':
-						board[x][y] = Piece::white | Piece::pawn;
+						board[y][x] = Piece::white | Piece::pawn;
 						break;
 					case 'P':
-						board[x][y] = Piece::black | Piece::pawn;
+						board[y][x] = Piece::black | Piece::pawn;
 						break;
 					case 'r':
-						board[x][y] = Piece::white | Piece::rook;
+						board[y][x] = Piece::white | Piece::rook;
 						break;
 					case 'R':
-						board[x][y] = Piece::black | Piece::rook;
+						board[y][x] = Piece::black | Piece::rook;
 						break;
 					case 'b':
-						board[x][y] = Piece::white | Piece::bishop;
+						board[y][x] = Piece::white | Piece::bishop;
 						break;
 					case 'B':
-						board[x][y] = Piece::black | Piece::bishop;
+						board[y][x] = Piece::black | Piece::bishop;
 						break;
 					case 'n':
-						board[x][y] = Piece::white | Piece::knight;
+						board[y][x] = Piece::white | Piece::knight;
 						break;
 					case 'N':
-						board[x][y] = Piece::black | Piece::knight;
+						board[y][x] = Piece::black | Piece::knight;
 						break;
 					case 'k':
-						board[x][y] = Piece::white | Piece::king;
+						board[y][x] = Piece::white | Piece::king;
 						setWhiteKing(x + (8 * y));
 						break;
 					case 'K':
-						board[x][y] = Piece::black | Piece::king;
+						board[y][x] = Piece::black | Piece::king;
 						setBlackKing(x + (8 * y));
 						break;
 					case 'q':
-						board[x][y] = Piece::white | Piece::queen;
+						board[y][x] = Piece::white | Piece::queen;
 						break;
 					case 'Q':
-						board[x][y] = Piece::black | Piece::queen;
+						board[y][x] = Piece::black | Piece::queen;
 						break;
 				}
-				index++;
+				i++;
 				x++;
 			}
 		}
-		index++;
+		i++;
 	}
 
-	if (FEN[index] == 'w')
+	if (FEN[i] == 'w')
 	{
 		currentTurn = Piece::white;
 		oppositeTurn = Piece::black;
 	}
-	else if (FEN[index] == 'b')
+	else if (FEN[i] == 'b')
 	{
 		currentTurn = Piece::black;
 		oppositeTurn = Piece::white;
 	}
-	index += 2;
+	i += 2;
 
 	setWhiteShortCastle(false);
 	setWhiteLongCastle(false);
 	setBlackShortCastle(false);
 	setBlackLongCastle(false);
 
-	while (FEN[index] != ' ')
+	while (FEN[i] != ' ')
 	{
-		switch (FEN[index])
+		switch (FEN[i])
 		{
 			case 'K':
 				setWhiteShortCastle(true);
@@ -150,17 +148,16 @@ void BoardState::loadFEN(const std::string& FEN){
 				setBlackLongCastle(true);
 				break;
 		}
-		index++;
+		i++;
 	}
-	index++;
+	i++;
 
-	if (FEN[index] != '-')
+	if (FEN[i] != '-')
 	{
-		int x, y;
-		x = int(FEN[index]) - 'a';
-		index++;
-		y = int(FEN[index]) - '1';
+		int x = int(FEN[i]) - 'a';
+		i++;
+		int y = int(FEN[i]) - '1';
 		setEnPassant(x + (8 * y));
 	}
-	index++;
+	i++;
 }

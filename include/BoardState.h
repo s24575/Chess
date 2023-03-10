@@ -13,12 +13,16 @@ public:
 	void movePiece(int StartX, int StartY, int FinishX, int FinishY);
 	void loadFEN(const std::string& FEN);
 
+public:
+	inline uint8_t getPiece(int x, int y) const { return board[y][x]; }
+	void setPiece(int x, int y, uint8_t piece) { board[y][x] = piece; }
+
 	inline uint8_t** getBoard() const { return board; }
 
 	void setCurrentTurn(uint8_t turn) { currentTurn = turn; }
-	inline uint8_t getCurrentTurn() { return currentTurn; }
+	inline uint8_t getCurrentTurn() const { return currentTurn; }
 	void setOppositeTurn(uint8_t turn) { oppositeTurn = turn; }
-	inline uint8_t getOppositeTurn() { return oppositeTurn; }
+	inline uint8_t getOppositeTurn() const { return oppositeTurn; }
 
 	void setEnPassant(int position) { enPassant = position; }
 	inline int getEnPassant() const { return enPassant; }

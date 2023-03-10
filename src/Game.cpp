@@ -24,14 +24,15 @@ void Game::init()
 	currentBoardState.loadFEN(DEFAULT_FEN);
 }
 
-Game::~Game()
+void Game::refreshTile(int x, int y, bool highlight = false)
 {
+	SDL_Color color = ((x + y) & 1) ? darkColor : lightColor;
 
-}
+	if (highlight)
+	{
+		color = ((x + y) & 1) ? highlightDarkColor : highlightLightColor;
+	}
 
-void Game::refreshTile(int x, int y)
-{
-	SDL_Color color = !((x + y) & 1) ? lightColor : darkColor;
 	SDL_Rect tile = { x * 80, y * 80, 80, 80 };
 	SDL_SetRenderDrawColor(Window::m_Renderer, color.r, color.g, color.b, color.a);
 	SDL_RenderFillRect(Window::m_Renderer, &tile);
@@ -39,7 +40,7 @@ void Game::refreshTile(int x, int y)
 
 void Game::refreshPiece(int x, int y)
 {
-	uint8_t currentPiece = currentBoardState.getBoard()[x][y];
+	uint8_t currentPiece = currentBoardState.getPiece(x, y);
 
 	if (currentPiece)
 	{
@@ -66,7 +67,9 @@ void Game::refreshAllSquares()
 
 	if (pickedUp)
 	{
-		highlightTile(movingPieceX, movingPieceY);
+		refreshTile(movingPieceX, movingPieceY, true);
+		refreshPiece(movingPieceX, movingPieceY);
+
 		for (int position : legalMoves)
 		{
 			int x = position % 8;
@@ -76,19 +79,10 @@ void Game::refreshAllSquares()
 	}
 }
 
-void Game::highlightTile(int x, int y)
-{
-	SDL_Color currentColor = ((x + y) & 1) ? highlightDarkColor : highlightLightColor;
-	SDL_Rect tile = { x * 80, y * 80, 80, 80 };
-	SDL_SetRenderDrawColor(Window::m_Renderer, currentColor.r, currentColor.g, currentColor.b, currentColor.a);
-	SDL_RenderFillRect(Window::m_Renderer, &tile);
-	refreshPiece(x, y);
-}
-
 void Game::highlightAttack(int x, int y)
-{	
+{
 	SDL_Point center = { x * 80 + 40, y * 80 + 40 };
-	SDL_Color color = ((x + y) % 2) ? highlightDarkColor : highlightLightColor;
+	SDL_Color color = ((x + y) & 1) ? highlightDarkColor : highlightLightColor;
 	int radius = 9;
 
 	SDL_SetRenderDrawColor(Window::m_Renderer, color.r, color.g, color.b, color.a);
@@ -141,20 +135,6 @@ SDL_Texture* Game::getPieceTexture(uint8_t piece)
 	return nullptr;
 }
 
-void Game::printPositions()
-{
-	for (int y = 0; y < 8; y++)
-	{
-		for (int x = 0; x < 8; x++)
-		{
-			std::bitset<8> bits(currentBoardState.getBoard()[x][y]);
-			std::cout << bits << ' ';
-		}
-		std::cout << '\n';
-	}
-	std::cout << '\n';
-}
-
 void Game::handleMouseButton(SDL_MouseButtonEvent& b)
 {
 	if (b.button == SDL_BUTTON_LEFT)
@@ -181,7 +161,7 @@ void Game::handleMouseButton(SDL_MouseButtonEvent& b)
 
 void Game::attemptPickupPiece(int x, int y)
 {
-	if (currentBoardState.getBoard()[x][y] & currentBoardState.getCurrentTurn())
+	if (currentBoardState.getPiece(x, y) & currentBoardState.getCurrentTurn())
 	{
 		legalMoves = calculateLegalMoves(x, y, &currentBoardState);
 		if (!legalMoves.empty())
@@ -200,9 +180,9 @@ void Game::attemptPlacePiece(int FinishX, int FinishY)
 	if (movingPieceX == FinishX && movingPieceY == FinishY)
 		return;
 
-	uint8_t cursorPiece = currentBoardState.getBoard()[movingPieceX][movingPieceY];
+	uint8_t cursorPiece = currentBoardState.getBoard()[movingPieceY][movingPieceX];
 
-	if (currentBoardState.getBoard()[FinishX][FinishY] & currentBoardState.getCurrentTurn())
+	if (currentBoardState.getBoard()[FinishY][FinishX] & currentBoardState.getCurrentTurn())
 	{
 		attemptPickupPiece(FinishX, FinishY);
 	}
@@ -252,26 +232,26 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 {
 	std::unordered_set<int> possibleMoves;
 
-	int pieceType = boardstate->getBoard()[x][y];
+	int pieceType = boardstate->getBoard()[y][x];
 	uint8_t** board = boardstate->getBoard();
 	int piecePosition = x + (8 * y);
 	uint8_t enemy = (pieceType & Piece::white) ? Piece::black : Piece::white;
 
 	if (pieceType & Piece::pawn && pieceType & Piece::white)
 	{ // replace with Piece::bottomPawn = black/white and Piece::upperPawn = black/white for different starting positions
-		if (y == 6 && board[x][y - 1] == 0 && board[x][y - 2] == 0)
+		if (y == 6 && board[y - 1][x] == 0 && board[y - 2][x] == 0)
 		{
 			possibleMoves.insert(piecePosition - 16);
 		}
-		if (y > 0 && board[x][y - 1] == 0)
+		if (y > 0 && board[y - 1][x] == 0)
 		{
 			possibleMoves.insert(piecePosition - 8);
 		}
-		if (x > 0 && y > 0 && (board[x - 1][y - 1] & Piece::black || (x - 1) + 8 * (y - 1) == boardstate->getEnPassant()))
+		if (x > 0 && y > 0 && (board[y - 1][x - 1] & Piece::black || (x - 1) + 8 * (y - 1) == boardstate->getEnPassant()))
 		{
 			possibleMoves.insert(piecePosition - 9);
 		}
-		if (x < 7 && y > 0 && (board[x + 1][y - 1] & Piece::black || (x + 1) + 8 * (y - 1) == boardstate->getEnPassant()))
+		if (x < 7 && y > 0 && (board[y - 1][x + 1] & Piece::black || (x + 1) + 8 * (y - 1) == boardstate->getEnPassant()))
 		{
 			possibleMoves.insert(piecePosition - 7);
 		}
@@ -279,20 +259,20 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 	}
 	else if (pieceType & Piece::pawn && pieceType & Piece::black)
 	{
-		if (y == 1 && board[x][y + 1] == 0 && board[x][y + 2] == 0)
+		if (y == 1 && board[y + 1][x] == 0 && board[y + 2][x] == 0)
 		{
 			possibleMoves.insert(piecePosition + 16);
 		}
-		if (y < 7 && board[x][y + 1] == 0)
+		if (y < 7 && board[y + 1][x] == 0)
 		{
 			possibleMoves.insert(piecePosition + 8);
 
 		}
-		if (x > 0 && y < 7 && (board[x - 1][y + 1] & Piece::white || (x - 1) + 8 * (y + 1) == boardstate->getEnPassant()))
+		if (x > 0 && y < 7 && (board[y + 1][x - 1] & Piece::white || (x - 1) + 8 * (y + 1) == boardstate->getEnPassant()))
 		{
 			possibleMoves.insert(piecePosition + 7);
 		}
-		if (y < 7 && x < 7 && (board[x + 1][y + 1] & Piece::white || (x + 1) + 8 * (y + 1) == boardstate->getEnPassant()))
+		if (y < 7 && x < 7 && (board[y + 1][x + 1] & Piece::white || (x + 1) + 8 * (y + 1) == boardstate->getEnPassant()))
 		{
 			possibleMoves.insert(piecePosition + 9);
 		}
@@ -313,7 +293,7 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 					for (int k = 1; k < n + 1; ++k)
 					{
 						b = true;
-						if (board[x + (k * directionX)][y + (k * directionY)] & enemy)
+						if (board[y + (k * directionY)][x + (k * directionX)] & enemy)
 						{
 							b = false;
 							if (!(std::count(possibleMoves.begin(), possibleMoves.end(), x + (k * directionX) + (8 * (y + (k * directionY))))))
@@ -322,7 +302,7 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 							}
 							break;
 						}
-						if (board[x + (k * directionX)][y + (k * directionY)] != 0)
+						if (board[y + (k * directionY)][x + (k * directionX)] != 0)
 						{
 							b = false;
 							break;
@@ -341,56 +321,56 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 	{
 		if (x - 2 > -1 && y - 1 > -1)
 		{
-			if (board[x - 2][y - 1] == 0 || board[x - 2][y - 1] & enemy)
+			if (board[y - 1][x - 2] == 0 || board[y - 1][x - 2] & enemy)
 			{
 				possibleMoves.insert(x - 2 + (8 * (y - 1)));
 			}
 		}
 		if (x - 1 > -1 && y - 2 > -1)
 		{
-			if (board[x - 1][y - 2] == 0 || board[x - 1][y - 2] & enemy)
+			if (board[y - 2][x - 1] == 0 || board[y - 2][x - 1] & enemy)
 			{
 				possibleMoves.insert(x - 1 + (8 * (y - 2)));
 			}
 		}
 		if (!(x + 1 > 7) && y - 2 > -1)
 		{
-			if (board[x + 1][y - 2] == 0 || board[x + 1][y - 2] & enemy)
+			if (board[y - 2][x + 1] == 0 || board[y - 2][x + 1] & enemy)
 			{
 				possibleMoves.insert(x + 1 + (8 * (y - 2)));
 			}
 		}
 		if (!(x + 2 > 7) && y - 1 > -1)
 		{
-			if (board[x + 2][y - 1] == 0 || board[x + 2][y - 1] & enemy)
+			if (board[y - 1][x + 2] == 0 || board[y - 1][x + 2] & enemy)
 			{
 				possibleMoves.insert(x + 2 + (8 * (y - 1)));
 			}
 		}
 		if (!(x + 2 > 7) && !(y + 1 > 7))
 		{
-			if (board[x + 2][y + 1] == 0 || board[x + 2][y + 1] & enemy)
+			if (board[y + 1][x + 2] == 0 || board[y + 1][x + 2] & enemy)
 			{
 				possibleMoves.insert(x + 2 + (8 * (y + 1)));
 			}
 		}
 		if (!(x + 1 > 7) && !(y + 2 > 7))
 		{
-			if (board[x + 1][y + 2] == 0 || board[x + 1][y + 2] & enemy)
+			if (board[y + 2][x + 1] == 0 || board[y + 2][x + 1] & enemy)
 			{
 				possibleMoves.insert(x + 1 + (8 * (y + 2)));
 			}
 		}
 		if (x - 1 > -1 && !(y + 2 > 7))
 		{
-			if (board[x - 1][y + 2] == 0 || board[x - 1][y + 2] & enemy)
+			if (board[y + 2][x - 1] == 0 || board[y + 2][x - 1] & enemy)
 			{
 				possibleMoves.insert(x - 1 + (8 * (y + 2)));
 			}
 		}
 		if (x - 2 > -1 && !(y + 1 > 7))
 		{
-			if (board[x - 2][y + 1] == 0 || board[x - 2][y + 1] & enemy)
+			if (board[y + 1][x - 2] == 0 || board[y + 1][x - 2] & enemy)
 			{
 				possibleMoves.insert(x - 2 + (8 * (y + 1)));
 			}
@@ -412,7 +392,7 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 					for (int k = 1; k < n + 1; ++k)
 					{
 						b = true;
-						if (board[x + (k * directionX)][y + (k * directionY)] & enemy)
+						if (board[y + (k * directionY)][x + (k * directionX)] & enemy)
 						{
 							b = false;
 							if (!(std::count(possibleMoves.begin(), possibleMoves.end(), x + (k * directionX) + (8 * (y + (k * directionY))))))
@@ -421,7 +401,7 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 							}
 							break;
 						}
-						if (board[x + (k * directionX)][y + (k * directionY)] != 0)
+						if (board[y + (k * directionY)][x + (k * directionX)] != 0)
 						{
 							b = false;
 							break;
@@ -451,7 +431,7 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 					for (int k = 1; k < n + 1; ++k)
 					{
 						b = true;
-						if (board[x + (k * directionX)][y + (k * directionY)] & enemy)
+						if (board[y + (k * directionY)][x + (k * directionX)] & enemy)
 						{
 							b = false;
 							if (!(std::count(possibleMoves.begin(), possibleMoves.end(), x + (k * directionX) + (8 * (y + (k * directionY))))))
@@ -460,7 +440,7 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 							}
 							break;
 						}
-						if (board[x + (k * directionX)][y + (k * directionY)] != 0)
+						if (board[y + (k * directionY)][x + (k * directionX)] != 0)
 						{
 							b = false;
 							break;
@@ -486,7 +466,7 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 					for (int k = 1; k < n + 1; ++k)
 					{
 						b = true;
-						if (board[x + (k * directionX)][y + (k * directionY)] & enemy)
+						if (board[y + (k * directionY)][x + (k * directionX)] & enemy)
 						{
 							b = false;
 							if (!(std::count(possibleMoves.begin(), possibleMoves.end(), x + (k * directionX) + (8 * (y + (k * directionY))))))
@@ -495,7 +475,7 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 							}
 							break;
 						}
-						if (board[x + (k * directionX)][y + (k * directionY)] != 0)
+						if (board[y + (k * directionY)][x + (k * directionX)] != 0)
 						{
 							b = false;
 							break;
@@ -514,56 +494,56 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 	{
 		if (x - 1 > -1 && y - 1 > -1)
 		{
-			if (board[x - 1][y - 1] == 0 || board[x - 1][y - 1] & enemy)
+			if (board[y - 1][x - 1] == 0 || board[y - 1][x - 1] & enemy)
 			{
 				possibleMoves.insert(x - 1 + (8 * (y - 1)));
 			}
 		}
 		if (y - 1 > -1)
 		{
-			if (board[x][y - 1] == 0 || board[x][y - 1] & enemy)
+			if (board[y - 1][x] == 0 || board[y - 1][x] & enemy)
 			{
 				possibleMoves.insert(x + (8 * (y - 1)));
 			}
 		}
 		if (!(x + 1 > 7) && y - 1 > -1)
 		{
-			if (board[x + 1][y - 1] == 0 || board[x + 1][y - 1] & enemy)
+			if (board[y - 1][x + 1] == 0 || board[y - 1][x + 1] & enemy)
 			{
 				possibleMoves.insert(x + 1 + (8 * (y - 1)));
 			}
 		}
 		if (!(x + 1 > 7))
 		{
-			if (board[x + 1][y] == 0 || board[x + 1][y] & enemy)
+			if (board[y][x + 1] == 0 || board[y][x + 1] & enemy)
 			{
 				possibleMoves.insert(x + 1 + (8 * y));
 			}
 		}
 		if (!(x + 1 > 7) && !(y + 1 > 7))
 		{
-			if (board[x + 1][y + 1] == 0 || board[x + 1][y + 1] & enemy)
+			if (board[y + 1][x + 1] == 0 || board[y + 1][x + 1] & enemy)
 			{
 				possibleMoves.insert(x + 1 + (8 * (y + 1)));
 			}
 		}
 		if (!(y + 1 > 7))
 		{
-			if (board[x][y + 1] == 0 || board[x][y + 1] & enemy)
+			if (board[y + 1][x] == 0 || board[y + 1][x] & enemy)
 			{
 				possibleMoves.insert(x + (8 * (y + 1)));
 			}
 		}
 		if (x - 1 > -1 && !(y + 1 > 7))
 		{
-			if (board[x - 1][y + 1] == 0 || board[x - 1][y + 1] & enemy)
+			if (board[y + 1][x - 1] == 0 || board[y + 1][x - 1] & enemy)
 			{
 				possibleMoves.insert(x - 1 + (8 * (y + 1)));
 			}
 		}
 		if (x - 1 > -1)
 		{
-			if (board[x - 1][y] == 0 || board[x - 1][y] & enemy)
+			if (board[y][x - 1] == 0 || board[y][x - 1] & enemy)
 			{
 				possibleMoves.insert(x - 1 + (8 * y));
 			}
@@ -573,14 +553,14 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 		{
 			if (boardstate->getWhiteShortCastle())
 			{
-				if (board[5][7] == 0 && board[6][7] == 0)
+				if (board[7][5] == 0 && board[7][6] == 0)
 				{
 					possibleMoves.insert(x + 2 + (8 * y));
 				}
 			}
 			if (boardstate->getWhiteLongCastle())
 			{
-				if (board[3][7] == 0 && board[2][7] == 0 && board[1][7] == 0)
+				if (board[7][3] == 0 && board[7][2] == 0 && board[7][1] == 0)
 				{
 					possibleMoves.insert(x - 2 + (8 * y));
 				}
@@ -590,14 +570,14 @@ std::unordered_set<int> Game::calculatePseudoLegalMoves(int x, int y, BoardState
 		{
 			if (boardstate->getBlackShortCastle())
 			{
-				if (board[5][0] == 0 && board[6][0] == 0)
+				if (board[0][5] == 0 && board[0][6] == 0)
 				{
 					possibleMoves.insert(x + 2 + (8 * y));
 				}
 			}
 			if (boardstate->getBlackLongCastle())
 			{
-				if (board[3][0] == 0 && board[2][0] == 0 && board[1][0] == 0)
+				if (board[0][3] == 0 && board[0][2] == 0 && board[0][1] == 0)
 				{
 					possibleMoves.insert(x - 2 + (8 * y));
 				}
@@ -619,7 +599,7 @@ std::unordered_set<int> Game::calculateLegalMoves(int PieceX, int PieceY, BoardS
 	std::unordered_set<int> pseudoLegalMoves = calculatePseudoLegalMoves(PieceX, PieceY, board);
 	std::unordered_set<int> validLegalMoves;
 
-	uint8_t currentPiece = board->getBoard()[PieceX][PieceY];
+	uint8_t currentPiece = board->getBoard()[PieceY][PieceX];
 
 	// use color mask and get the opposite
 	uint8_t enemy = (currentPiece & (Piece::white | Piece::black)) ^ (Piece::white | Piece::black);
@@ -674,7 +654,7 @@ std::unordered_set<int> Game::calculateLegalMoves(int PieceX, int PieceY, BoardS
 		{
 			for (int x = 0; x < 8; ++x)
 			{
-				if (boardStateCopy.getBoard()[x][y] & enemy)
+				if (boardStateCopy.getBoard()[y][x] & enemy)
 				{
 					std::unordered_set<int> attackedSquares = calculatePseudoLegalMoves(x, y, &boardStateCopy);
 
@@ -707,13 +687,13 @@ std::unordered_set<int> Game::calculateLegalMoves(int PieceX, int PieceY, BoardS
 
 void Game::checkForSpecialPawnMoves(int StartY, int FinishX, int FinishY, BoardState* boardState)
 {
-	uint8_t& currentPiece = boardState->getBoard()[FinishX][FinishY];
+	uint8_t& currentPiece = boardState->getBoard()[FinishY][FinishX];
 
 	if (currentPiece & Piece::white)
 	{
 		if (FinishX + (8 * FinishY) == boardState->getEnPassant())
 		{
-			boardState->getBoard()[FinishX][FinishY + 1] = 0;
+			boardState->getBoard()[FinishY + 1][FinishX] = 0;
 		}
 		boardState->setEnPassant(-1);
 		if (FinishY == 4 && StartY == 6)
@@ -747,11 +727,11 @@ void Game::checkForSpecialPawnMoves(int StartY, int FinishX, int FinishY, BoardS
 			}
 		}
 	}
-	else if (boardState->getBoard()[FinishX][FinishY] & Piece::black)
+	else if (boardState->getBoard()[FinishY][FinishX] & Piece::black)
 	{
 		if (FinishX + (8 * FinishY) == boardState->getEnPassant())
 		{
-			boardState->getBoard()[FinishX][FinishY - 1] = 0;
+			boardState->getBoard()[FinishY - 1][FinishX] = 0;
 		}
 		boardState->setEnPassant(-1);
 		if (FinishY == 3 && StartY == 1)
@@ -767,19 +747,19 @@ void Game::checkForSpecialPawnMoves(int StartY, int FinishX, int FinishY, BoardS
 				std::cin >> promotionPiece;
 				if (promotionPiece == "queen")
 				{
-					boardState->getBoard()[FinishX][FinishY] = Piece::black | Piece::queen;
+					boardState->getBoard()[FinishY][FinishX] = Piece::black | Piece::queen;
 				}
 				else if (promotionPiece == "knight")
 				{
-					boardState->getBoard()[FinishX][FinishY] = Piece::black | Piece::knight;
+					boardState->getBoard()[FinishY][FinishX] = Piece::black | Piece::knight;
 				}
 				else if (promotionPiece == "rook")
 				{
-					boardState->getBoard()[FinishX][FinishY] = Piece::black | Piece::rook;
+					boardState->getBoard()[FinishY][FinishX] = Piece::black | Piece::rook;
 				}
 				else if (promotionPiece == "bishop")
 				{
-					boardState->getBoard()[FinishX][FinishY] = Piece::black | Piece::bishop;
+					boardState->getBoard()[FinishY][FinishX] = Piece::black | Piece::bishop;
 				}
 			}
 		}
@@ -833,7 +813,7 @@ bool Game::checkForCheck(BoardState* board)
 	{
 		for (int x = 0; x < 8; x++)
 		{
-			uint8_t currentPiece = board->getBoard()[x][y];
+			uint8_t currentPiece = board->getBoard()[y][x];
 
 			if (currentPiece & board->getOppositeTurn() && !(currentPiece & Piece::king))
 			{
@@ -854,7 +834,7 @@ bool Game::checkForCheckmate(BoardState* board)
 	{
 		for (int x = 0; x < 8; x++)
 		{
-			uint8_t currentPiece = board->getBoard()[x][y];
+			uint8_t currentPiece = board->getBoard()[y][x];
 
 			if (currentPiece & board->getCurrentTurn())
 			{
