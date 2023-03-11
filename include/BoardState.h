@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <unordered_set>
 
 class BoardState
 {
@@ -12,6 +13,14 @@ public:
 
 	void movePiece(int StartX, int StartY, int FinishX, int FinishY);
 	void loadFEN(const std::string& FEN);
+
+	std::unordered_set<int> calculatePseudoLegalMoves(int x, int y);
+	void checkForSpecialPawnMoves(int startY, int finishX, int finishY);
+	void checkForCastle(int x, int y);
+	void disableCastle(int x1, int y1, int x2, int y2);
+	std::unordered_set<int> calculateLegalMoves(int x, int y);
+	bool checkForCheck();
+	bool checkForCheckmate();
 
 public:
 	inline uint8_t getPiece(int x, int y) const { return board[y][x]; }

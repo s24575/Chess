@@ -23,6 +23,9 @@ uint8_t Piece::knight;
 uint8_t Piece::rook;
 uint8_t Piece::pawn;
 
+uint8_t Piece::pieceMask;
+uint8_t Piece::colorMask;
+
 void Piece::init() {
 	loadTypes();
 	loadImages();
@@ -31,16 +34,19 @@ void Piece::init() {
 void Piece::loadTypes()
 {
 	//first 6 bits for type
-	pawn = 1;
-	knight = 2;
-	bishop = 4;
-	rook = 8;
-	queen = 16;
-	king = 32;
+	pawn =		0b00000001;
+	knight =	0b00000010;
+	bishop =	0b00000100;
+	rook =		0b00001000;
+	queen =		0b00010000;
+	king =		0b00100000;
 
 	//last 2 bits for color
-	white = 64;
-	black = 128;
+	white =		0b01000000;
+	black =		0b10000000;
+
+	pieceMask = 0b00111111;
+	colorMask = 0b11000000;
 }
 
 void Piece::loadImage(const char* filepath, SDL_Texture*& texture)

@@ -26,14 +26,6 @@ public:
 	void attemptPickupPiece(int x, int y);
 	void attemptPlacePiece(int x, int y);
 
-	std::unordered_set<int> calculatePseudoLegalMoves(int x, int y, BoardState* board);
-	void checkForSpecialPawnMoves(int startY, int finishX, int finishY, BoardState* board);
-	void checkForCastle(int x, int y, BoardState* board);
-	void disableCastle(int StartX, int StartY, int FinishX, int FinishY, BoardState* board);
-	std::unordered_set<int> calculateLegalMoves(int x, int y, BoardState* board);
-	bool checkForCheck(BoardState* board);
-	bool checkForCheckmate(BoardState* board);
-
 	bool pickedUp = false;
 private:
 	BoardState currentBoardState;
