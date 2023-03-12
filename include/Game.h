@@ -36,7 +36,7 @@ private:
 	SDL_Color highlightLightColor = { 130, 151, 105, 0 };
 	SDL_Color highlightDarkColor = { 100, 111, 64, 0 };
 
-	std::unordered_set<int> legalMoves;
+	BoardState::PositionSet legalMoves;
 
 	int movingPieceX = -1;
 	int movingPieceY = -1;

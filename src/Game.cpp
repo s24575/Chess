@@ -70,11 +70,9 @@ void Game::refreshAllSquares()
 		refreshTile(movingPieceX, movingPieceY, true);
 		refreshPiece(movingPieceX, movingPieceY);
 
-		for (int position : legalMoves)
+		for (BoardState::Position position : legalMoves)
 		{
-			int x = position % 8;
-			int y = position / 8;
-			highlightAttack(x, y);
+			highlightAttack(position.first, position.second);
 		}
 	}
 }
@@ -186,7 +184,7 @@ void Game::attemptPlacePiece(int FinishX, int FinishY)
 	{
 		attemptPickupPiece(FinishX, FinishY);
 	}
-	else if (legalMoves.count(FinishX + (8 * FinishY)))
+	else if (legalMoves.count({ FinishX, FinishY }))
 	{
 		currentBoardState.movePiece(movingPieceX, movingPieceY, FinishX, FinishY);
 
@@ -206,7 +204,6 @@ void Game::attemptPlacePiece(int FinishX, int FinishY)
 }
 
 // highlight checks
-// test promotions in calculateLegalMoves
 // test all possible moves in depth x
 // 
 // stockfish:

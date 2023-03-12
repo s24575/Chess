@@ -59,13 +59,13 @@ void BoardState::movePiece(int x1, int y1, int x2, int y2)
 		checkForCastle(x2, y2);
 		if (currentPiece & Piece::white)
 		{
-			setWhiteKing(y2 * 8 + x2);
+			setWhiteKing({x2, y2});
 			setWhiteShortCastle(false);
 			setWhiteLongCastle(false);
 		}
 		else
 		{
-			setBlackKing(y2 * 8 + x2);
+			setBlackKing({x2, y2});
 			setBlackShortCastle(false);
 			setBlackLongCastle(false);
 		}
@@ -76,376 +76,222 @@ void BoardState::movePiece(int x1, int y1, int x2, int y2)
 	std::swap(currentTurn, oppositeTurn);
 }
 
-std::unordered_set<int> BoardState::calculatePseudoLegalMoves(int x, int y)
+BoardState::PositionSet BoardState::calculatePseudoLegalMoves(int x, int y)
 {
-	std::unordered_set<int> possibleMoves;
+	PositionSet possibleMoves;
+	uint8_t currentPiece = getPiece(x, y);
 
-	int pieceType = getPiece(x, y);
-	int piecePosition = x + (8 * y);
-	uint8_t enemy = (pieceType & Piece::white) ? Piece::black : Piece::white;
+	auto withinBounds = [](int x, int y)
+	{
+		return(0 <= x && x < 8 && 0 <= y && y < 8);
+	};
 
-	// replace with Piece::bottomPawn = black/white and Piece::upperPawn = black/white for different starting positions
-	if (pieceType & Piece::pawn && pieceType & Piece::white)
+	auto addMove = [&](int x, int y)
 	{
-		if (y == 6 && board[y - 1][x] == 0 && board[y - 2][x] == 0)
+		if (withinBounds(x, y))
 		{
-			possibleMoves.insert(piecePosition - 16);
-		}
-		if (y > 0 && board[y - 1][x] == 0)
-		{
-			possibleMoves.insert(piecePosition - 8);
-		}
-		if (x > 0 && y > 0 && (board[y - 1][x - 1] & Piece::black || (x - 1) + 8 * (y - 1) == getEnPassant()))
-		{
-			possibleMoves.insert(piecePosition - 9);
-		}
-		if (x < 7 && y > 0 && (board[y - 1][x + 1] & Piece::black || (x + 1) + 8 * (y - 1) == getEnPassant()))
-		{
-			possibleMoves.insert(piecePosition - 7);
-		}
-		return possibleMoves;
-	}
-	else if (pieceType & Piece::pawn && pieceType & Piece::black)
-	{
-		if (y == 1 && board[y + 1][x] == 0 && board[y + 2][x] == 0)
-		{
-			possibleMoves.insert(piecePosition + 16);
-		}
-		if (y < 7 && board[y + 1][x] == 0)
-		{
-			possibleMoves.insert(piecePosition + 8);
-
-		}
-		if (x > 0 && y < 7 && (board[y + 1][x - 1] & Piece::white || (x - 1) + 8 * (y + 1) == getEnPassant()))
-		{
-			possibleMoves.insert(piecePosition + 7);
-		}
-		if (y < 7 && x < 7 && (board[y + 1][x + 1] & Piece::white || (x + 1) + 8 * (y + 1) == getEnPassant()))
-		{
-			possibleMoves.insert(piecePosition + 9);
-		}
-		return possibleMoves;
-	}
-	else if (pieceType & Piece::bishop)
-	{
-		for (int i = 0; i < 8; ++i)
-		{
-			for (int j = 0; j < 8; ++j)
+			if (!(getPiece(x, y) & getCurrentTurn()))
 			{
-				if (std::abs(x - i) == std::abs(y - j) && std::abs(y - j) > 0)
+				possibleMoves.insert({ x, y });
+			}
+		}
+	};
+
+	auto calculateBishopMoves = [&](int x, int y)
+	{
+		int8_t dx[] = { -1, 1 };
+		int8_t dy[] = { -1, 1 };
+
+		for (int j = 0; j < 2; j++)
+		{
+			for (int i = 0; i < 2; i++)
+			{
+				int a = x;
+				int b = y;
+
+				while (true)
 				{
-					int n = std::abs(x - i);
-					int directionX = (i - x) / n;
-					int directionY = (j - y) / n;
-					bool b = false;
-					for (int k = 1; k < n + 1; ++k)
+					a += dx[i];
+					b += dy[j];
+
+					if (withinBounds(a, b) && !getPiece(a, b))
 					{
-						b = true;
-						if (board[y + (k * directionY)][x + (k * directionX)] & enemy)
-						{
-							b = false;
-							if (!(std::count(possibleMoves.begin(), possibleMoves.end(), x + (k * directionX) + (8 * (y + (k * directionY))))))
-							{
-								possibleMoves.insert(x + (k * directionX) + (8 * (y + (k * directionY))));
-							}
-							break;
-						}
-						if (board[y + (k * directionY)][x + (k * directionX)] != 0)
-						{
-							b = false;
-							break;
-						}
+						possibleMoves.insert({ a, b });
 					}
-					if (b)
+					else
 					{
-						possibleMoves.insert(i + (8 * j));
+						if (withinBounds(a, b) && !(getPiece(a, b) & getCurrentTurn()))
+						{
+							possibleMoves.insert({ a, b });
+						}
+
+						break;
 					}
 				}
 			}
 		}
-		return possibleMoves;
-	}
-	else if (pieceType & Piece::knight)
+	};
+
+	auto calculateRookMoves = [&](int x, int y)
 	{
-		if (x - 2 > -1 && y - 1 > -1)
+		int8_t dx[] = { 0, 1, 0, -1 };
+		int8_t dy[] = { 1, 0, -1, 0 };
+
+		for (int i = 0; i < 4; i++)
 		{
-			if (board[y - 1][x - 2] == 0 || board[y - 1][x - 2] & enemy)
+			int a = x;
+			int b = y;
+
+			while (true)
 			{
-				possibleMoves.insert(x - 2 + (8 * (y - 1)));
-			}
-		}
-		if (x - 1 > -1 && y - 2 > -1)
-		{
-			if (board[y - 2][x - 1] == 0 || board[y - 2][x - 1] & enemy)
-			{
-				possibleMoves.insert(x - 1 + (8 * (y - 2)));
-			}
-		}
-		if (!(x + 1 > 7) && y - 2 > -1)
-		{
-			if (board[y - 2][x + 1] == 0 || board[y - 2][x + 1] & enemy)
-			{
-				possibleMoves.insert(x + 1 + (8 * (y - 2)));
-			}
-		}
-		if (!(x + 2 > 7) && y - 1 > -1)
-		{
-			if (board[y - 1][x + 2] == 0 || board[y - 1][x + 2] & enemy)
-			{
-				possibleMoves.insert(x + 2 + (8 * (y - 1)));
-			}
-		}
-		if (!(x + 2 > 7) && !(y + 1 > 7))
-		{
-			if (board[y + 1][x + 2] == 0 || board[y + 1][x + 2] & enemy)
-			{
-				possibleMoves.insert(x + 2 + (8 * (y + 1)));
-			}
-		}
-		if (!(x + 1 > 7) && !(y + 2 > 7))
-		{
-			if (board[y + 2][x + 1] == 0 || board[y + 2][x + 1] & enemy)
-			{
-				possibleMoves.insert(x + 1 + (8 * (y + 2)));
-			}
-		}
-		if (x - 1 > -1 && !(y + 2 > 7))
-		{
-			if (board[y + 2][x - 1] == 0 || board[y + 2][x - 1] & enemy)
-			{
-				possibleMoves.insert(x - 1 + (8 * (y + 2)));
-			}
-		}
-		if (x - 2 > -1 && !(y + 1 > 7))
-		{
-			if (board[y + 1][x - 2] == 0 || board[y + 1][x - 2] & enemy)
-			{
-				possibleMoves.insert(x - 2 + (8 * (y + 1)));
-			}
-		}
-		return possibleMoves;
-	}
-	else if (pieceType & Piece::rook)
-	{
-		for (int i = 0; i < 8; ++i)
-		{
-			for (int j = 0; j < 8; ++j)
-			{
-				if ((i == x || j == y) && !(i == x && j == y))
+				a += dx[i];
+				b += dy[i];
+
+				if (withinBounds(a, b) && !getPiece(a, b))
 				{
-					int n = std::abs(x - i + y - j);
-					int directionX = (i - x) / n;
-					int directionY = (j - y) / n;
-					bool b = false;
-					for (int k = 1; k < n + 1; ++k)
+					possibleMoves.insert({ a, b });
+				}
+				else
+				{
+					if (withinBounds(a, b) && !(getPiece(a, b) & getCurrentTurn()))
 					{
-						b = true;
-						if (board[y + (k * directionY)][x + (k * directionX)] & enemy)
-						{
-							b = false;
-							if (!(std::count(possibleMoves.begin(), possibleMoves.end(), x + (k * directionX) + (8 * (y + (k * directionY))))))
-							{
-								possibleMoves.insert(x + (k * directionX) + (8 * (y + (k * directionY))));
-							}
-							break;
-						}
-						if (board[y + (k * directionY)][x + (k * directionX)] != 0)
-						{
-							b = false;
-							break;
-						}
+						possibleMoves.insert({ a, b });
 					}
-					if (b)
-					{
-						possibleMoves.insert(i + (8 * j));
-					}
+
+					break;
 				}
 			}
 		}
-		return possibleMoves;
-	}
-	else if (pieceType & Piece::queen)
+	};
+
+	if (currentPiece & Piece::pawn)
 	{
-		for (int i = 0; i < 8; ++i)
+		if (currentPiece & Piece::white)
 		{
-			for (int j = 0; j < 8; ++j)
+			if (y == 6 && !getPiece(x, y - 1) && !getPiece(x, y - 2))
 			{
-				if (std::abs(x - i) == std::abs(y - j) && std::abs(y - j) > 0)
-				{
-					int n = std::abs(x - i);
-					int directionX = (i - x) / n;
-					int directionY = (j - y) / n;
-					bool b = false;
-					for (int k = 1; k < n + 1; ++k)
-					{
-						b = true;
-						if (board[y + (k * directionY)][x + (k * directionX)] & enemy)
-						{
-							b = false;
-							if (!(std::count(possibleMoves.begin(), possibleMoves.end(), x + (k * directionX) + (8 * (y + (k * directionY))))))
-							{
-								possibleMoves.insert(x + (k * directionX) + (8 * (y + (k * directionY))));
-							}
-							break;
-						}
-						if (board[y + (k * directionY)][x + (k * directionX)] != 0)
-						{
-							b = false;
-							break;
-						}
-					}
-					if (b)
-					{
-						possibleMoves.insert(i + (8 * j));
-					}
-				}
+				possibleMoves.insert({ x, y - 2 });
+			}
+			if (0 < y && !getPiece(x, y - 1))
+			{
+				possibleMoves.insert({ x, y - 1});
+			}
+			if (0 < x && 0 < y && (getPiece(x - 1, y - 1) & Piece::black || Position{x - 1, y - 1} == getEnPassant()))
+			{
+				possibleMoves.insert({x - 1, y - 1});
+			}
+			if (x < 7 && 0 < y && (getPiece(x + 1, y - 1) & Piece::black || Position{x + 1, y - 1} == getEnPassant()))
+			{
+				possibleMoves.insert({x + 1, y - 1});
 			}
 		}
-		for (int i = 0; i < 8; ++i)
+		else if (currentPiece & Piece::black)
 		{
-			for (int j = 0; j < 8; ++j)
+			if (y == 1 && !getPiece(x, y + 1) && !getPiece(x, y + 2))
 			{
-				if ((i == x || j == y) && !(i == x && j == y))
-				{
-					int n = std::abs(x - i + y - j);
-					int directionX = (i - x) / n;
-					int directionY = (j - y) / n;
-					bool b = false;
-					for (int k = 1; k < n + 1; ++k)
-					{
-						b = true;
-						if (board[y + (k * directionY)][x + (k * directionX)] & enemy)
-						{
-							b = false;
-							if (!(std::count(possibleMoves.begin(), possibleMoves.end(), x + (k * directionX) + (8 * (y + (k * directionY))))))
-							{
-								possibleMoves.insert(x + (k * directionX) + (8 * (y + (k * directionY))));
-							}
-							break;
-						}
-						if (board[y + (k * directionY)][x + (k * directionX)] != 0)
-						{
-							b = false;
-							break;
-						}
-					}
-					if (b)
-					{
-						possibleMoves.insert(i + (8 * j));
-					}
-				}
+				possibleMoves.insert({x, y + 2});
+			}
+			if (y < 7 && !getPiece(x, y + 1))
+			{
+				possibleMoves.insert({x, y + 1});
+
+			}
+			if (x > 0 && y < 7 && (getPiece(x - 1, y + 1) & Piece::white || Position{ x - 1, y + 1 } == getEnPassant()))
+			{
+				possibleMoves.insert({x - 1, y + 1});
+			}
+			if (y < 7 && x < 7 && (getPiece(x + 1, y + 1) & Piece::white || Position{ x + 1, y + 1 } == getEnPassant()))
+			{
+				possibleMoves.insert({x + 1, y + 1});
 			}
 		}
-		return possibleMoves;
 	}
-	else if (pieceType & Piece::king)
+	else if (currentPiece & Piece::bishop)
 	{
-		if (x - 1 > -1 && y - 1 > -1)
+		calculateBishopMoves(x, y);
+	}
+	else if (currentPiece & Piece::knight)
+	{
+		int8_t dx[] = { -1, 1 };
+		int8_t dy[] = { -1, 1 };
+
+		for (int j = 0; j < 2; j++)
 		{
-			if (board[y - 1][x - 1] == 0 || board[y - 1][x - 1] & enemy)
+			for (int i = 0; i < 2; i++)
 			{
-				possibleMoves.insert(x - 1 + (8 * (y - 1)));
+				addMove(x + dx[i] * 2, y + dy[j] * 1);
+				addMove(x + dx[i] * 1, y + dy[j] * 2);
 			}
 		}
-		if (y - 1 > -1)
+	}
+	else if (currentPiece & Piece::rook)
+	{
+		calculateRookMoves(x, y);
+	}
+	else if (currentPiece & Piece::queen)
+	{
+		calculateBishopMoves(x, y);
+		calculateRookMoves(x, y);
+	}
+	else if (currentPiece & Piece::king)
+	{
+		for (int j = -1; j <= 1; j++)
 		{
-			if (board[y - 1][x] == 0 || board[y - 1][x] & enemy)
+			for (int i = -1; i <= 1; i++)
 			{
-				possibleMoves.insert(x + (8 * (y - 1)));
-			}
-		}
-		if (!(x + 1 > 7) && y - 1 > -1)
-		{
-			if (board[y - 1][x + 1] == 0 || board[y - 1][x + 1] & enemy)
-			{
-				possibleMoves.insert(x + 1 + (8 * (y - 1)));
-			}
-		}
-		if (!(x + 1 > 7))
-		{
-			if (board[y][x + 1] == 0 || board[y][x + 1] & enemy)
-			{
-				possibleMoves.insert(x + 1 + (8 * y));
-			}
-		}
-		if (!(x + 1 > 7) && !(y + 1 > 7))
-		{
-			if (board[y + 1][x + 1] == 0 || board[y + 1][x + 1] & enemy)
-			{
-				possibleMoves.insert(x + 1 + (8 * (y + 1)));
-			}
-		}
-		if (!(y + 1 > 7))
-		{
-			if (board[y + 1][x] == 0 || board[y + 1][x] & enemy)
-			{
-				possibleMoves.insert(x + (8 * (y + 1)));
-			}
-		}
-		if (x - 1 > -1 && !(y + 1 > 7))
-		{
-			if (board[y + 1][x - 1] == 0 || board[y + 1][x - 1] & enemy)
-			{
-				possibleMoves.insert(x - 1 + (8 * (y + 1)));
-			}
-		}
-		if (x - 1 > -1)
-		{
-			if (board[y][x - 1] == 0 || board[y][x - 1] & enemy)
-			{
-				possibleMoves.insert(x - 1 + (8 * y));
+				if (i != 0 || j != 0)
+				{
+					addMove(x + i, y + j);
+				}
 			}
 		}
 
-		if (pieceType & Piece::white)
+		if (currentPiece & Piece::white)
 		{
 			if (getWhiteShortCastle())
 			{
-				if (board[7][5] == 0 && board[7][6] == 0)
+				if (!getPiece(5, 7) && !getPiece(6,7))
 				{
-					possibleMoves.insert(x + 2 + (8 * y));
+					possibleMoves.insert({x + 2, y});
 				}
 			}
 			if (getWhiteLongCastle())
 			{
-				if (board[7][3] == 0 && board[7][2] == 0 && board[7][1] == 0)
+				if (!getPiece(1, 7) && !getPiece(2, 7) && !getPiece(3, 7))
 				{
-					possibleMoves.insert(x - 2 + (8 * y));
+					possibleMoves.insert({x - 2, y});
 				}
 			}
 		}
-		else if (pieceType & Piece::black)
+		else if (currentPiece & Piece::black)
 		{
 			if (getBlackShortCastle())
 			{
-				if (board[0][5] == 0 && board[0][6] == 0)
+				if (!getPiece(5, 0) && !getPiece(6, 0))
 				{
-					possibleMoves.insert(x + 2 + (8 * y));
+					possibleMoves.insert({ x + 2, y });
 				}
 			}
 			if (getBlackLongCastle())
 			{
-				if (board[0][3] == 0 && board[0][2] == 0 && board[0][1] == 0)
+				if (!getPiece(1, 0) && !getPiece(2, 0) && !getPiece(3, 0))
 				{
-					possibleMoves.insert(x - 2 + (8 * y));
+					possibleMoves.insert({ x - 2, y });
 				}
 			}
 		}
-
-		return possibleMoves;
 	}
 
 	return possibleMoves;
 }
 
-std::unordered_set<int> BoardState::calculateLegalMoves(int PieceX, int PieceY)
+BoardState::PositionSet BoardState::calculateLegalMoves(int PieceX, int PieceY)
 {
-	std::unordered_set<int> pseudoLegalMoves = calculatePseudoLegalMoves(PieceX, PieceY);
-	std::unordered_set<int> validLegalMoves;
+	PositionSet pseudoLegalMoves = calculatePseudoLegalMoves(PieceX, PieceY);
+	PositionSet validLegalMoves;
 
 	uint8_t currentPiece = getPiece(PieceX, PieceY);
 
-	// use color mask and get the opposite
 	uint8_t enemy = (currentPiece & Piece::colorMask) ^ Piece::colorMask;
 
 	if (currentPiece & Piece::king)
@@ -455,25 +301,25 @@ std::unordered_set<int> BoardState::calculateLegalMoves(int PieceX, int PieceY)
 			// disable castling
 			if (currentPiece & Piece::white)
 			{
-				pseudoLegalMoves.erase(62);
-				pseudoLegalMoves.erase(58);
+				pseudoLegalMoves.erase({6, 7});
+				pseudoLegalMoves.erase({2, 7});
 			}
 			else if (currentPiece & Piece::black)
 			{
-				pseudoLegalMoves.erase(6);
-				pseudoLegalMoves.erase(2);
+				pseudoLegalMoves.erase({6, 0});
+				pseudoLegalMoves.erase({2, 0});
 			}
 		}
 	}
 
-	for (int move : pseudoLegalMoves)
+	for (Position position : pseudoLegalMoves)
 	{
 		bool isLegal = true;
 
 		BoardState boardStateCopy(*this);
 
-		int destinationX = move % 8;
-		int destinationY = move / 8;
+		int destinationX = position.first;
+		int destinationY = position.second;
 
 		boardStateCopy.movePiece(PieceX, PieceY, destinationX, destinationY);
 
@@ -483,7 +329,7 @@ std::unordered_set<int> BoardState::calculateLegalMoves(int PieceX, int PieceY)
 			{
 				if (boardStateCopy.getPiece(x, y) & enemy)
 				{
-					std::unordered_set<int> attackedSquares = boardStateCopy.calculatePseudoLegalMoves(x, y);
+					PositionSet attackedSquares = boardStateCopy.calculatePseudoLegalMoves(x, y);
 
 					if (currentPiece & Piece::white)
 					{
@@ -505,7 +351,7 @@ std::unordered_set<int> BoardState::calculateLegalMoves(int PieceX, int PieceY)
 
 		if (isLegal)
 		{
-			validLegalMoves.insert(move);
+			validLegalMoves.insert(position);
 		}
 	}
 
@@ -516,55 +362,32 @@ void BoardState::checkForSpecialPawnMoves(int StartY, int FinishX, int FinishY)
 {
 	uint8_t currentPiece = getPiece(FinishX, FinishY);
 
-	if (currentPiece & Piece::white && FinishX + (8 * FinishY) == getEnPassant())
+	if (currentPiece & Piece::white && Position{ FinishX, FinishY } == getEnPassant())
 	{
 		getBoard()[FinishY + 1][FinishX] = 0;
 	}
-	else if (currentPiece & Piece::black && FinishX + (8 * FinishY) == getEnPassant())
+	else if (currentPiece & Piece::black && Position{ FinishX, FinishY } == getEnPassant())
 	{
 		getBoard()[FinishY - 1][FinishX] = 0;
 	}
 
 	if (currentPiece & Piece::white && FinishY == 4 && StartY == 6)
 	{
-		setEnPassant(FinishX + (8 * (FinishY + 1)));
+		setEnPassant({FinishX, FinishY + 1});
 	}
-	else if (currentPiece & Piece::white && Piece::black && FinishY == 3 && StartY == 1)
+	else if (currentPiece & Piece::black && FinishY == 3 && StartY == 1)
 	{
-		setEnPassant(FinishX + (8 * (FinishY - 1)));
+		setEnPassant({ FinishX, FinishY - 1 });
 	}
 	else
 	{
-		setEnPassant(-1);
+		setEnPassant({ -1, -1 });
 	}
 
 	if (((currentPiece & Piece::white) && FinishY == 0) || ((currentPiece & Piece::black) && FinishY == 7))
 	{
-		//if (boardState == &currentBoardState)
-		//{
-		//	std::cout << "Choose your piece (queen/knight/rook/bishop): ";
-		//	std::string promotionPiece;
-		//	std::cin >> promotionPiece;
-
-		//	uint8_t color = currentPiece & Piece::colorMask;
-
-		//	if (promotionPiece == "queen")
-		//	{
-		//		currentPiece = color | Piece::queen;
-		//	}
-		//	else if (promotionPiece == "knight")
-		//	{
-		//		currentPiece = color | Piece::knight;
-		//	}
-		//	else if (promotionPiece == "rook")
-		//	{
-		//		currentPiece = color | Piece::rook;
-		//	}
-		//	else if (promotionPiece == "bishop")
-		//	{
-		//		currentPiece = color | Piece::bishop;
-		//	}
-		//}
+		uint8_t color = currentPiece & Piece::colorMask;
+		board[FinishY][FinishX] = color | Piece::queen;
 	}
 }
 
@@ -572,19 +395,23 @@ void BoardState::checkForCastle(int x, int y)
 {
 	if (getWhiteShortCastle() && (x == 6 && y == 7))
 	{
-		movePiece(7, 7, 5, 7);
+		board[7][5] = board[7][7];
+		board[7][7] = 0;
 	}
 	else if (getWhiteLongCastle() && (x == 2 && y == 7))
 	{
-		movePiece(0, 7, 3, 7);
+		board[7][3] = board[7][0];
+		board[7][0] = 0;
 	}
 	else if (getBlackShortCastle() && (x == 6 && y == 0))
 	{
-		movePiece(7, 0, 5, 0);
+		board[0][5] = board[0][7];
+		board[0][7] = 0;
 	}
 	else if (getBlackLongCastle() && (x == 2 && y == 0))
 	{
-		movePiece(0, 0, 3, 0);
+		board[0][3] = board[0][0];
+		board[0][0] = 0;
 	}
 }
 
@@ -618,7 +445,7 @@ bool BoardState::checkForCheck()
 
 			if (currentPiece & getOppositeTurn() && !(currentPiece & Piece::king))
 			{
-				std::unordered_set<int> attackedTiles = calculatePseudoLegalMoves(x, y);
+				PositionSet attackedTiles = calculatePseudoLegalMoves(x, y);
 				if (getCurrentTurn() & Piece::white && attackedTiles.count(getWhiteKing()) || getCurrentTurn() & Piece::black && attackedTiles.count(getBlackKing()))
 				{
 					return true;
@@ -635,16 +462,9 @@ bool BoardState::checkForCheckmate()
 	{
 		for (int x = 0; x < 8; x++)
 		{
-			uint8_t currentPiece = getBoard()[y][x];
-
-			if (currentPiece & getCurrentTurn())
+			if (getPiece(x, y) & getCurrentTurn() && !calculateLegalMoves(x, y).empty())
 			{
-				auto moves = calculateLegalMoves(x, y);
-
-				if (!moves.empty())
-				{
-					return false;
-				}
+				return false;
 			}
 		}
 	}
@@ -695,11 +515,11 @@ void BoardState::loadFEN(const std::string& FEN){
 						break;
 					case 'k':
 						board[y][x] = Piece::white | Piece::king;
-						setWhiteKing(x + (8 * y));
+						setWhiteKing({x, y});
 						break;
 					case 'K':
 						board[y][x] = Piece::black | Piece::king;
-						setBlackKing(x + (8 * y));
+						setBlackKing({x, y});
 						break;
 					case 'q':
 						board[y][x] = Piece::white | Piece::queen;
@@ -758,7 +578,7 @@ void BoardState::loadFEN(const std::string& FEN){
 		int x = int(FEN[i]) - 'a';
 		i++;
 		int y = int(FEN[i]) - '1';
-		setEnPassant(x + (8 * y));
+		setEnPassant({x, y});
 	}
 	i++;
 }

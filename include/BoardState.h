@@ -2,11 +2,23 @@
 
 #include <stdint.h>
 #include <string>
+#include <utility>
 #include <unordered_set>
 
 class BoardState
 {
 public:
+	struct PairHash
+	{
+		std::size_t operator()(const std::pair<int8_t, int8_t>& p) const
+		{
+			return std::hash<int8_t>()(p.first) ^ (std::hash<int8_t>()(p.second) << 1);
+		}
+	};
+
+	using Position = std::pair<int8_t, int8_t>;
+	using PositionSet = std::unordered_set<Position, PairHash>;
+
 	BoardState();
 	BoardState(const BoardState& other);
 	~BoardState();
@@ -14,11 +26,11 @@ public:
 	void movePiece(int StartX, int StartY, int FinishX, int FinishY);
 	void loadFEN(const std::string& FEN);
 
-	std::unordered_set<int> calculatePseudoLegalMoves(int x, int y);
+	PositionSet calculatePseudoLegalMoves(int x, int y);
+	PositionSet calculateLegalMoves(int x, int y);
 	void checkForSpecialPawnMoves(int startY, int finishX, int finishY);
 	void checkForCastle(int x, int y);
 	void disableCastle(int x1, int y1, int x2, int y2);
-	std::unordered_set<int> calculateLegalMoves(int x, int y);
 	bool checkForCheck();
 	bool checkForCheckmate();
 
@@ -33,13 +45,13 @@ public:
 	void setOppositeTurn(uint8_t turn) { oppositeTurn = turn; }
 	inline uint8_t getOppositeTurn() const { return oppositeTurn; }
 
-	void setEnPassant(int position) { enPassant = position; }
-	inline int getEnPassant() const { return enPassant; }
+	void setEnPassant(Position position) { enPassant = position; }
+	inline Position getEnPassant() const { return enPassant; }
 
-	void setWhiteKing(int position) { whiteKing = position; }
-	void setBlackKing(int position) { blackKing = position; }
-	inline int getWhiteKing() const { return whiteKing; }
-	inline int getBlackKing() const { return blackKing; }
+	void setWhiteKing(Position position) { whiteKing = position; }
+	void setBlackKing(Position position) { blackKing = position; }
+	inline Position getWhiteKing() const { return whiteKing; }
+	inline Position getBlackKing() const { return blackKing; }
 
 	void setWhiteShortCastle(bool updateCastle) { whiteShortCastle = updateCastle; }
 	void setWhiteLongCastle(bool updateCastle) { whiteLongCastle = updateCastle; }
@@ -56,10 +68,10 @@ private:
 	uint8_t currentTurn = 0;
 	uint8_t oppositeTurn = 0;
 
-	int enPassant = -1;
+	Position enPassant;
 
-	int whiteKing = -1;
-	int blackKing = -1;
+	Position whiteKing;
+	Position blackKing;
 
 	bool whiteShortCastle = false;
 	bool whiteLongCastle = false;
