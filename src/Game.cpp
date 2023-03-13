@@ -24,6 +24,13 @@ void Game::init()
 	currentBoardState.loadFEN(DEFAULT_FEN);
 }
 
+void Game::printMoveCount()
+{
+	int depth = 2;
+
+	std::cout << currentBoardState.calculateLegalMovesCount(depth) << '\n';
+}
+
 void Game::refreshTile(int x, int y, bool highlight = false)
 {
 	SDL_Color color = ((x + y) & 1) ? darkColor : lightColor;
@@ -49,19 +56,14 @@ void Game::refreshPiece(int x, int y)
 	}
 }
 
-void Game::refreshSquare(int x, int y)
-{
-	refreshTile(x, y);
-	refreshPiece(x, y);	
-}
-
 void Game::refreshAllSquares()
 {
 	for (int y = 0; y < 8; y++)
 	{
 		for (int x = 0; x < 8; x++)
 		{
-			refreshSquare(x, y);
+			refreshTile(x, y);
+			refreshPiece(x, y);
 		}
 	}
 
@@ -177,8 +179,6 @@ void Game::attemptPlacePiece(int FinishX, int FinishY)
 
 	if (movingPieceX == FinishX && movingPieceY == FinishY)
 		return;
-
-	uint8_t cursorPiece = currentBoardState.getBoard()[movingPieceY][movingPieceX];
 
 	if (currentBoardState.getPiece(FinishX, FinishY) & currentBoardState.getCurrentTurn())
 	{

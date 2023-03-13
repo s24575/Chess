@@ -15,9 +15,10 @@ public:
 
 	void init();
 
+	void printMoveCount();
+
 	void refreshTile(int x, int y, bool highlight);
 	void refreshPiece(int x, int y);
-	void refreshSquare(int x, int y);
 	void refreshAllSquares();
 	void highlightAttack(int x, int y);
 

@@ -285,6 +285,37 @@ BoardState::PositionSet BoardState::calculatePseudoLegalMoves(int x, int y)
 	return possibleMoves;
 }
 
+int BoardState::calculateLegalMovesCount(int n)
+{
+	if (n == 0 || checkForCheck(getOppositeTurn()))
+		return 1;
+
+	int count = 0;
+	for (int y = 0; y < 8; y++)
+	{
+		for (int x = 0; x < 8; x++)
+		{
+			uint8_t currentPiece = getPiece(x, y);
+
+			if (currentPiece & getCurrentTurn())
+			{
+				PositionSet pseudoLegalMoves = calculatePseudoLegalMoves(x, y);
+
+				for (Position position : pseudoLegalMoves)
+				{
+					BoardState boardStateCopy(*this);
+
+					boardStateCopy.movePiece(x, y, position.first, position.second);
+
+					count += boardStateCopy.calculateLegalMovesCount(n - 1);
+				}
+			}
+		}
+	}
+
+	return count;
+}
+
 BoardState::PositionSet BoardState::calculateLegalMoves(int PieceX, int PieceY)
 {
 	PositionSet pseudoLegalMoves = calculatePseudoLegalMoves(PieceX, PieceY);
@@ -296,7 +327,7 @@ BoardState::PositionSet BoardState::calculateLegalMoves(int PieceX, int PieceY)
 
 	if (currentPiece & Piece::king)
 	{
-		if (checkForCheck())
+		if (checkForCheck(getCurrentTurn()))
 		{
 			// disable castling
 			if (currentPiece & Piece::white)
@@ -314,42 +345,11 @@ BoardState::PositionSet BoardState::calculateLegalMoves(int PieceX, int PieceY)
 
 	for (Position position : pseudoLegalMoves)
 	{
-		bool isLegal = true;
-
 		BoardState boardStateCopy(*this);
 
-		int destinationX = position.first;
-		int destinationY = position.second;
+		boardStateCopy.movePiece(PieceX, PieceY, position.first, position.second);
 
-		boardStateCopy.movePiece(PieceX, PieceY, destinationX, destinationY);
-
-		for (int y = 0; y < 8; ++y)
-		{
-			for (int x = 0; x < 8; ++x)
-			{
-				if (boardStateCopy.getPiece(x, y) & enemy)
-				{
-					PositionSet attackedSquares = boardStateCopy.calculatePseudoLegalMoves(x, y);
-
-					if (currentPiece & Piece::white)
-					{
-						if (attackedSquares.count(boardStateCopy.getWhiteKing()))
-						{
-							isLegal = false;
-						}
-					}
-					if (currentPiece & Piece::black)
-					{
-						if (attackedSquares.count(boardStateCopy.getBlackKing()))
-						{
-							isLegal = false;
-						}
-					}
-				}
-			}
-		}
-
-		if (isLegal)
+		if (!boardStateCopy.checkForCheck(getCurrentTurn()))
 		{
 			validLegalMoves.insert(position);
 		}
@@ -435,7 +435,7 @@ void BoardState::disableCastle(int x1, int y1, int x2, int y2)
 	}
 }
 
-bool BoardState::checkForCheck()
+bool BoardState::checkForCheck(uint8_t kingColor)
 {
 	for (int y = 0; y < 8; y++)
 	{
@@ -443,10 +443,11 @@ bool BoardState::checkForCheck()
 		{
 			uint8_t currentPiece = getPiece(x, y);
 
-			if (currentPiece & getOppositeTurn() && !(currentPiece & Piece::king))
+			if (!(currentPiece & kingColor))
 			{
 				PositionSet attackedTiles = calculatePseudoLegalMoves(x, y);
-				if (getCurrentTurn() & Piece::white && attackedTiles.count(getWhiteKing()) || getCurrentTurn() & Piece::black && attackedTiles.count(getBlackKing()))
+
+				if (kingColor & Piece::white && attackedTiles.count(getWhiteKing()) || kingColor & Piece::black && attackedTiles.count(getBlackKing()))
 				{
 					return true;
 				}

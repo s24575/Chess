@@ -26,12 +26,14 @@ public:
 	void movePiece(int StartX, int StartY, int FinishX, int FinishY);
 	void loadFEN(const std::string& FEN);
 
+	int calculateLegalMovesCount(int n);
+
 	PositionSet calculatePseudoLegalMoves(int x, int y);
 	PositionSet calculateLegalMoves(int x, int y);
 	void checkForSpecialPawnMoves(int startY, int finishX, int finishY);
 	void checkForCastle(int x, int y);
 	void disableCastle(int x1, int y1, int x2, int y2);
-	bool checkForCheck();
+	bool checkForCheck(uint8_t kingColor);
 	bool checkForCheckmate();
 
 public:

@@ -88,6 +88,9 @@ void Window::run()
 						case SDLK_ESCAPE:
 							m_Closed = true;
 							break;
+						case SDLK_r:
+							m_Game.printMoveCount();
+							break;
 					}
 				case SDL_MOUSEBUTTONDOWN:
 					m_Game.handleMouseButton(event.button);
