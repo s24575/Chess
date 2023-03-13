@@ -12,6 +12,8 @@ BoardState::BoardState()
 
 BoardState::BoardState(const BoardState& other) :
 	enPassant(other.enPassant),
+	currentTurn(other.currentTurn),
+	oppositeTurn(other.oppositeTurn),
 	whiteKing(other.whiteKing),
 	blackKing(other.blackKing),
 	whiteShortCastle(other.whiteShortCastle),
@@ -25,11 +27,11 @@ BoardState::BoardState(const BoardState& other) :
 		board[i] = new uint8_t[8];
 	}
 
-	for (int y = 0; y < 8; ++y)
+	for (int y = 0; y < 8; y++)
 	{
-		for (int x = 0; x < 8; ++x)
+		for (int x = 0; x < 8; x++)
 		{
-			board[y][x] = other.getPiece(x, y);
+			board[y][x] = other.board[y][x];
 		}
 	}
 }
@@ -63,7 +65,7 @@ void BoardState::movePiece(int x1, int y1, int x2, int y2)
 			setWhiteShortCastle(false);
 			setWhiteLongCastle(false);
 		}
-		else
+		else if (currentPiece & Piece::black)
 		{
 			setBlackKing({x2, y2});
 			setBlackShortCastle(false);
@@ -166,7 +168,7 @@ BoardState::PositionSet BoardState::calculatePseudoLegalMoves(int x, int y)
 
 	if (currentPiece & Piece::pawn)
 	{
-		if (currentPiece & Piece::white)
+		if (currentPiece & Piece::black)
 		{
 			if (y == 6 && !getPiece(x, y - 1) && !getPiece(x, y - 2))
 			{
@@ -176,16 +178,16 @@ BoardState::PositionSet BoardState::calculatePseudoLegalMoves(int x, int y)
 			{
 				possibleMoves.insert({ x, y - 1});
 			}
-			if (0 < x && 0 < y && (getPiece(x - 1, y - 1) & Piece::black || Position{x - 1, y - 1} == getEnPassant()))
+			if (0 < x && 0 < y && (getPiece(x - 1, y - 1) & Piece::white || Position{x - 1, y - 1} == getEnPassant()))
 			{
 				possibleMoves.insert({x - 1, y - 1});
 			}
-			if (x < 7 && 0 < y && (getPiece(x + 1, y - 1) & Piece::black || Position{x + 1, y - 1} == getEnPassant()))
+			if (x < 7 && 0 < y && (getPiece(x + 1, y - 1) & Piece::white || Position{x + 1, y - 1} == getEnPassant()))
 			{
 				possibleMoves.insert({x + 1, y - 1});
 			}
 		}
-		else if (currentPiece & Piece::black)
+		else if (currentPiece & Piece::white)
 		{
 			if (y == 1 && !getPiece(x, y + 1) && !getPiece(x, y + 2))
 			{
@@ -196,11 +198,11 @@ BoardState::PositionSet BoardState::calculatePseudoLegalMoves(int x, int y)
 				possibleMoves.insert({x, y + 1});
 
 			}
-			if (x > 0 && y < 7 && (getPiece(x - 1, y + 1) & Piece::white || Position{ x - 1, y + 1 } == getEnPassant()))
+			if (x > 0 && y < 7 && (getPiece(x - 1, y + 1) & Piece::black || Position{ x - 1, y + 1 } == getEnPassant()))
 			{
 				possibleMoves.insert({x - 1, y + 1});
 			}
-			if (y < 7 && x < 7 && (getPiece(x + 1, y + 1) & Piece::white || Position{ x + 1, y + 1 } == getEnPassant()))
+			if (y < 7 && x < 7 && (getPiece(x + 1, y + 1) & Piece::black || Position{ x + 1, y + 1 } == getEnPassant()))
 			{
 				possibleMoves.insert({x + 1, y + 1});
 			}
@@ -250,16 +252,16 @@ BoardState::PositionSet BoardState::calculatePseudoLegalMoves(int x, int y)
 		{
 			if (getWhiteShortCastle())
 			{
-				if (!getPiece(5, 7) && !getPiece(6,7))
+				if (!getPiece(5, 0) && !getPiece(6, 0))
 				{
-					possibleMoves.insert({x + 2, y});
+					possibleMoves.insert({ x + 2, y });
 				}
 			}
 			if (getWhiteLongCastle())
 			{
-				if (!getPiece(1, 7) && !getPiece(2, 7) && !getPiece(3, 7))
+				if (!getPiece(1, 0) && !getPiece(2, 0) && !getPiece(3, 0))
 				{
-					possibleMoves.insert({x - 2, y});
+					possibleMoves.insert({ x - 2, y });
 				}
 			}
 		}
@@ -267,14 +269,14 @@ BoardState::PositionSet BoardState::calculatePseudoLegalMoves(int x, int y)
 		{
 			if (getBlackShortCastle())
 			{
-				if (!getPiece(5, 0) && !getPiece(6, 0))
+				if (!getPiece(5, 7) && !getPiece(6, 7))
 				{
 					possibleMoves.insert({ x + 2, y });
 				}
 			}
 			if (getBlackLongCastle())
 			{
-				if (!getPiece(1, 0) && !getPiece(2, 0) && !getPiece(3, 0))
+				if (!getPiece(1, 7) && !getPiece(2, 7) && !getPiece(3, 7))
 				{
 					possibleMoves.insert({ x - 2, y });
 				}
@@ -287,7 +289,7 @@ BoardState::PositionSet BoardState::calculatePseudoLegalMoves(int x, int y)
 
 int BoardState::calculateLegalMovesCount(int n)
 {
-	if (n == 0 || checkForCheck(getOppositeTurn()))
+	if (n == 0)
 		return 1;
 
 	int count = 0;
@@ -295,9 +297,7 @@ int BoardState::calculateLegalMovesCount(int n)
 	{
 		for (int x = 0; x < 8; x++)
 		{
-			uint8_t currentPiece = getPiece(x, y);
-
-			if (currentPiece & getCurrentTurn())
+			if (getPiece(x, y) & getCurrentTurn())
 			{
 				PositionSet pseudoLegalMoves = calculatePseudoLegalMoves(x, y);
 
@@ -307,7 +307,10 @@ int BoardState::calculateLegalMovesCount(int n)
 
 					boardStateCopy.movePiece(x, y, position.first, position.second);
 
-					count += boardStateCopy.calculateLegalMovesCount(n - 1);
+					if (!boardStateCopy.checkForCheck(boardStateCopy.getOppositeTurn()))
+					{
+						count += boardStateCopy.calculateLegalMovesCount(n - 1);
+					}
 				}
 			}
 		}
@@ -393,25 +396,25 @@ void BoardState::checkForSpecialPawnMoves(int StartY, int FinishX, int FinishY)
 
 void BoardState::checkForCastle(int x, int y)
 {
-	if (getWhiteShortCastle() && (x == 6 && y == 7))
-	{
-		board[7][5] = board[7][7];
-		board[7][7] = 0;
-	}
-	else if (getWhiteLongCastle() && (x == 2 && y == 7))
-	{
-		board[7][3] = board[7][0];
-		board[7][0] = 0;
-	}
-	else if (getBlackShortCastle() && (x == 6 && y == 0))
+	if (getWhiteShortCastle() && (x == 6 && y == 0))
 	{
 		board[0][5] = board[0][7];
 		board[0][7] = 0;
 	}
-	else if (getBlackLongCastle() && (x == 2 && y == 0))
+	else if (getWhiteLongCastle() && (x == 2 && y == 0))
 	{
 		board[0][3] = board[0][0];
 		board[0][0] = 0;
+	}
+	else if (getBlackShortCastle() && (x == 6 && y == 7))
+	{
+		board[7][5] = board[7][7];
+		board[7][7] = 0;
+	}
+	else if (getBlackLongCastle() && (x == 2 && y == 7))
+	{
+		board[7][3] = board[7][0];
+		board[7][0] = 0;
 	}
 }
 
@@ -447,7 +450,12 @@ bool BoardState::checkForCheck(uint8_t kingColor)
 			{
 				PositionSet attackedTiles = calculatePseudoLegalMoves(x, y);
 
-				if (kingColor & Piece::white && attackedTiles.count(getWhiteKing()) || kingColor & Piece::black && attackedTiles.count(getBlackKing()))
+				//if (kingColor & Piece::white && attackedTiles.count(getWhiteKing()) || kingColor & Piece::black && attackedTiles.count(getBlackKing()))
+				//{
+				//	return true;
+				//}
+				Position oppositeKing = (kingColor & Piece::white) ? getWhiteKing() : getBlackKing();
+				if (attackedTiles.count(oppositeKing))
 				{
 					return true;
 				}
@@ -490,42 +498,42 @@ void BoardState::loadFEN(const std::string& FEN){
 			{
 				switch (FEN[i])
 				{
-					case 'p':
+					case 'P':
 						board[y][x] = Piece::white | Piece::pawn;
 						break;
-					case 'P':
+					case 'p':
 						board[y][x] = Piece::black | Piece::pawn;
 						break;
-					case 'r':
+					case 'R':
 						board[y][x] = Piece::white | Piece::rook;
 						break;
-					case 'R':
+					case 'r':
 						board[y][x] = Piece::black | Piece::rook;
 						break;
-					case 'b':
+					case 'B':
 						board[y][x] = Piece::white | Piece::bishop;
 						break;
-					case 'B':
+					case 'b':
 						board[y][x] = Piece::black | Piece::bishop;
 						break;
-					case 'n':
+					case 'N':
 						board[y][x] = Piece::white | Piece::knight;
 						break;
-					case 'N':
+					case 'n':
 						board[y][x] = Piece::black | Piece::knight;
 						break;
-					case 'k':
+					case 'K':
 						board[y][x] = Piece::white | Piece::king;
 						setWhiteKing({x, y});
 						break;
-					case 'K':
+					case 'k':
 						board[y][x] = Piece::black | Piece::king;
 						setBlackKing({x, y});
 						break;
-					case 'q':
+					case 'Q':
 						board[y][x] = Piece::white | Piece::queen;
 						break;
-					case 'Q':
+					case 'q':
 						board[y][x] = Piece::black | Piece::queen;
 						break;
 				}
