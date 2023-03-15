@@ -92,6 +92,7 @@ void Window::run()
 							m_Game.printMoveCount();
 							break;
 					}
+					break;
 				case SDL_MOUSEBUTTONDOWN:
 					m_Game.handleMouseButton(event.button);
 					break;

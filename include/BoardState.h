@@ -33,6 +33,7 @@ public:
 	void checkForSpecialPawnMoves(int startY, int finishX, int finishY);
 	void checkForCastle(int x, int y);
 	void disableCastle(int x1, int y1, int x2, int y2);
+	void removeIllegalCastling(PositionSet& possibleMoves, uint8_t piece);
 	bool checkForCheck(uint8_t kingColor);
 	bool checkForCheckmate();
 
@@ -70,10 +71,10 @@ private:
 	uint8_t currentTurn = 0;
 	uint8_t oppositeTurn = 0;
 
-	Position enPassant;
+	Position enPassant = {0, 0};
 
-	Position whiteKing;
-	Position blackKing;
+	Position whiteKing = {0, 0};
+	Position blackKing = {0, 0};
 
 	bool whiteShortCastle = false;
 	bool whiteLongCastle = false;

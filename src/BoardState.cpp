@@ -11,9 +11,9 @@ BoardState::BoardState()
 }
 
 BoardState::BoardState(const BoardState& other) :
-	enPassant(other.enPassant),
 	currentTurn(other.currentTurn),
 	oppositeTurn(other.oppositeTurn),
+	enPassant(other.enPassant),
 	whiteKing(other.whiteKing),
 	blackKing(other.blackKing),
 	whiteShortCastle(other.whiteShortCastle),
@@ -326,25 +326,7 @@ BoardState::PositionSet BoardState::calculateLegalMoves(int PieceX, int PieceY)
 
 	uint8_t currentPiece = getPiece(PieceX, PieceY);
 
-	uint8_t enemy = (currentPiece & Piece::colorMask) ^ Piece::colorMask;
-
-	if (currentPiece & Piece::king)
-	{
-		if (checkForCheck(getCurrentTurn()))
-		{
-			// disable castling
-			if (currentPiece & Piece::white)
-			{
-				pseudoLegalMoves.erase({6, 7});
-				pseudoLegalMoves.erase({2, 7});
-			}
-			else if (currentPiece & Piece::black)
-			{
-				pseudoLegalMoves.erase({6, 0});
-				pseudoLegalMoves.erase({2, 0});
-			}
-		}
-	}
+	removeIllegalCastling(pseudoLegalMoves, currentPiece);
 
 	for (Position position : pseudoLegalMoves)
 	{
@@ -438,6 +420,70 @@ void BoardState::disableCastle(int x1, int y1, int x2, int y2)
 	}
 }
 
+void BoardState::removeIllegalCastling(PositionSet& possibleMoves, uint8_t piece)
+{
+	if(!(piece & Piece::king))
+		return;
+
+	for(int y = 0; y < 8; y++)
+	{
+		for(int x = 0; x < 8; x++)
+		{
+			if(getPiece(x, y) & getOppositeTurn())
+			{
+				PositionSet attackedSquares = calculatePseudoLegalMoves(x, y);
+
+				if (piece & Piece::white)
+				{
+					if (getWhiteShortCastle())
+					{
+						for(int i = 4; i <= 6; i++){
+							if(attackedSquares.count({i, 0}))
+							{
+								possibleMoves.erase({6, 0});
+								break;
+							}
+						}
+					}
+					if (getWhiteLongCastle())
+					{
+						for(int i = 1; i <= 4; i++){
+							if(attackedSquares.count({i, 0}))
+							{
+								possibleMoves.erase({2, 0});
+								break;
+							}
+						}
+					}
+				}
+				else if (piece & Piece::black)
+				{
+					if (getBlackShortCastle())
+					{
+						for(int i = 4; i <= 6; i++){
+							if(attackedSquares.count({i, 7}))
+							{
+								possibleMoves.erase({6, 7});
+								break;
+							}
+						}
+					}
+					if (getBlackLongCastle())
+					{
+						for(int i = 1; i <= 4; i++){
+							if(attackedSquares.count({i, 7}))
+							{
+								possibleMoves.erase({2, 7});
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 bool BoardState::checkForCheck(uint8_t kingColor)
 {
 	for (int y = 0; y < 8; y++)
@@ -449,12 +495,8 @@ bool BoardState::checkForCheck(uint8_t kingColor)
 			if (!(currentPiece & kingColor))
 			{
 				PositionSet attackedTiles = calculatePseudoLegalMoves(x, y);
-
-				//if (kingColor & Piece::white && attackedTiles.count(getWhiteKing()) || kingColor & Piece::black && attackedTiles.count(getBlackKing()))
-				//{
-				//	return true;
-				//}
 				Position oppositeKing = (kingColor & Piece::white) ? getWhiteKing() : getBlackKing();
+
 				if (attackedTiles.count(oppositeKing))
 				{
 					return true;
