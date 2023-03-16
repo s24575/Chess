@@ -75,7 +75,7 @@ void Window::run()
 	while (!m_Closed)
 	{
 		// INPUT/UPDATE
-		if (SDL_WaitEvent(&event))
+		if (SDL_PollEvent(&event))
 		{
 			switch (event.type)
 			{

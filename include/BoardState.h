@@ -19,9 +19,7 @@ public:
 	using Position = std::pair<int8_t, int8_t>;
 	using PositionSet = std::unordered_set<Position, PairHash>;
 
-	BoardState();
-	BoardState(const BoardState& other);
-	~BoardState();
+	BoardState() = default;
 
 	void movePiece(int StartX, int StartY, int FinishX, int FinishY);
 	void loadFEN(const std::string& FEN);
@@ -40,8 +38,6 @@ public:
 public:
 	inline uint8_t getPiece(int x, int y) const { return board[y][x]; }
 	void setPiece(int x, int y, uint8_t piece) { board[y][x] = piece; }
-
-	inline uint8_t** getBoard() const { return board; }
 
 	void setCurrentTurn(uint8_t turn) { currentTurn = turn; }
 	inline uint8_t getCurrentTurn() const { return currentTurn; }
@@ -66,15 +62,15 @@ public:
 	inline bool getBlackLongCastle() const { return blackLongCastle; }
 
 private:
-	uint8_t** board = nullptr;
+	uint8_t board[8][8] = {0};
 
 	uint8_t currentTurn = 0;
 	uint8_t oppositeTurn = 0;
 
-	Position enPassant = {0, 0};
+	Position enPassant = { 0, 0 };
 
-	Position whiteKing = {0, 0};
-	Position blackKing = {0, 0};
+	Position whiteKing = { 0, 0 };
+	Position blackKing = { 0, 0 };
 
 	bool whiteShortCastle = false;
 	bool whiteLongCastle = false;

@@ -1,56 +1,14 @@
 #include "BoardState.h"
 #include "Piece.h"
 
-BoardState::BoardState()
-{
-	board = new uint8_t * [8];
-	for (int i = 0; i < 8; ++i)
-	{
-		board[i] = new uint8_t[8]{ 0 };
-	}
-}
-
-BoardState::BoardState(const BoardState& other) :
-	currentTurn(other.currentTurn),
-	oppositeTurn(other.oppositeTurn),
-	enPassant(other.enPassant),
-	whiteKing(other.whiteKing),
-	blackKing(other.blackKing),
-	whiteShortCastle(other.whiteShortCastle),
-	whiteLongCastle(other.whiteLongCastle),
-	blackShortCastle(other.blackShortCastle),
-	blackLongCastle(other.blackLongCastle)
-{
-	board = new uint8_t*[8];
-	for (int i = 0; i < 8; i++)
-	{
-		board[i] = new uint8_t[8];
-	}
-
-	for (int y = 0; y < 8; y++)
-	{
-		for (int x = 0; x < 8; x++)
-		{
-			board[y][x] = other.board[y][x];
-		}
-	}
-}
-
-BoardState::~BoardState()
-{
-	for (int x = 0; x < 8; x++)
-	{
-		delete[] board[x];
-	}
-	delete[] board;
-}
+#include <cctype>
 
 void BoardState::movePiece(int x1, int y1, int x2, int y2)
 {
 	uint8_t currentPiece = getPiece(x1, y1);
 
-	board[y2][x2] = currentPiece;
-	board[y1][x1] = 0;
+	setPiece(x2, y2, currentPiece);
+	setPiece(x1, y1, 0);
 
 	if (currentPiece & Piece::pawn)
 	{
@@ -61,13 +19,13 @@ void BoardState::movePiece(int x1, int y1, int x2, int y2)
 		checkForCastle(x2, y2);
 		if (currentPiece & Piece::white)
 		{
-			setWhiteKing({x2, y2});
+			setWhiteKing({ x2, y2 });
 			setWhiteShortCastle(false);
 			setWhiteLongCastle(false);
 		}
 		else if (currentPiece & Piece::black)
 		{
-			setBlackKing({x2, y2});
+			setBlackKing({ x2, y2 });
 			setBlackShortCastle(false);
 			setBlackLongCastle(false);
 		}
@@ -176,35 +134,35 @@ BoardState::PositionSet BoardState::calculatePseudoLegalMoves(int x, int y)
 			}
 			if (0 < y && !getPiece(x, y - 1))
 			{
-				possibleMoves.insert({ x, y - 1});
+				possibleMoves.insert({ x, y - 1 });
 			}
-			if (0 < x && 0 < y && (getPiece(x - 1, y - 1) & Piece::white || Position{x - 1, y - 1} == getEnPassant()))
+			if (0 < x && 0 < y && (getPiece(x - 1, y - 1) & Piece::white || Position{ x - 1, y - 1 } == getEnPassant()))
 			{
-				possibleMoves.insert({x - 1, y - 1});
+				possibleMoves.insert({ x - 1, y - 1 });
 			}
-			if (x < 7 && 0 < y && (getPiece(x + 1, y - 1) & Piece::white || Position{x + 1, y - 1} == getEnPassant()))
+			if (x < 7 && 0 < y && (getPiece(x + 1, y - 1) & Piece::white || Position{ x + 1, y - 1 } == getEnPassant()))
 			{
-				possibleMoves.insert({x + 1, y - 1});
+				possibleMoves.insert({ x + 1, y - 1 });
 			}
 		}
 		else if (currentPiece & Piece::white)
 		{
 			if (y == 1 && !getPiece(x, y + 1) && !getPiece(x, y + 2))
 			{
-				possibleMoves.insert({x, y + 2});
+				possibleMoves.insert({ x, y + 2 });
 			}
 			if (y < 7 && !getPiece(x, y + 1))
 			{
-				possibleMoves.insert({x, y + 1});
+				possibleMoves.insert({ x, y + 1 });
 
 			}
 			if (x > 0 && y < 7 && (getPiece(x - 1, y + 1) & Piece::black || Position{ x - 1, y + 1 } == getEnPassant()))
 			{
-				possibleMoves.insert({x - 1, y + 1});
+				possibleMoves.insert({ x - 1, y + 1 });
 			}
 			if (y < 7 && x < 7 && (getPiece(x + 1, y + 1) & Piece::black || Position{ x + 1, y + 1 } == getEnPassant()))
 			{
-				possibleMoves.insert({x + 1, y + 1});
+				possibleMoves.insert({ x + 1, y + 1 });
 			}
 		}
 	}
@@ -349,16 +307,16 @@ void BoardState::checkForSpecialPawnMoves(int StartY, int FinishX, int FinishY)
 
 	if (currentPiece & Piece::white && Position{ FinishX, FinishY } == getEnPassant())
 	{
-		getBoard()[FinishY + 1][FinishX] = 0;
+		setPiece(FinishX, FinishY + 1, Piece::none);
 	}
 	else if (currentPiece & Piece::black && Position{ FinishX, FinishY } == getEnPassant())
 	{
-		getBoard()[FinishY - 1][FinishX] = 0;
+		setPiece(FinishX, FinishY - 1, Piece::none);
 	}
 
 	if (currentPiece & Piece::white && FinishY == 4 && StartY == 6)
 	{
-		setEnPassant({FinishX, FinishY + 1});
+		setEnPassant({ FinishX, FinishY + 1 });
 	}
 	else if (currentPiece & Piece::black && FinishY == 3 && StartY == 1)
 	{
@@ -372,7 +330,7 @@ void BoardState::checkForSpecialPawnMoves(int StartY, int FinishX, int FinishY)
 	if (((currentPiece & Piece::white) && FinishY == 0) || ((currentPiece & Piece::black) && FinishY == 7))
 	{
 		uint8_t color = currentPiece & Piece::colorMask;
-		board[FinishY][FinishX] = color | Piece::queen;
+		setPiece(FinishX, FinishY, color | Piece::queen);
 	}
 }
 
@@ -380,23 +338,23 @@ void BoardState::checkForCastle(int x, int y)
 {
 	if (getWhiteShortCastle() && (x == 6 && y == 0))
 	{
-		board[0][5] = board[0][7];
-		board[0][7] = 0;
+		setPiece(5, 0, getPiece(7, 0));
+		setPiece(7, 0, Piece::none);
 	}
 	else if (getWhiteLongCastle() && (x == 2 && y == 0))
 	{
-		board[0][3] = board[0][0];
-		board[0][0] = 0;
+		setPiece(3, 0, getPiece(0, 0));
+		setPiece(0, 0, Piece::none);
 	}
 	else if (getBlackShortCastle() && (x == 6 && y == 7))
 	{
-		board[7][5] = board[7][7];
-		board[7][7] = 0;
+		setPiece(5, 7, getPiece(7, 7));
+		setPiece(7, 7, Piece::none);
 	}
 	else if (getBlackLongCastle() && (x == 2 && y == 7))
 	{
-		board[7][3] = board[7][0];
-		board[7][0] = 0;
+		setPiece(3, 7, getPiece(0, 7));
+		setPiece(0, 7, Piece::none);
 	}
 }
 
@@ -422,14 +380,14 @@ void BoardState::disableCastle(int x1, int y1, int x2, int y2)
 
 void BoardState::removeIllegalCastling(PositionSet& possibleMoves, uint8_t piece)
 {
-	if(!(piece & Piece::king))
+	if (!(piece & Piece::king))
 		return;
 
-	for(int y = 0; y < 8; y++)
+	for (int y = 0; y < 8; y++)
 	{
-		for(int x = 0; x < 8; x++)
+		for (int x = 0; x < 8; x++)
 		{
-			if(getPiece(x, y) & getOppositeTurn())
+			if (getPiece(x, y) & getOppositeTurn())
 			{
 				PositionSet attackedSquares = calculatePseudoLegalMoves(x, y);
 
@@ -437,20 +395,22 @@ void BoardState::removeIllegalCastling(PositionSet& possibleMoves, uint8_t piece
 				{
 					if (getWhiteShortCastle())
 					{
-						for(int i = 4; i <= 6; i++){
-							if(attackedSquares.count({i, 0}))
+						for (int i = 4; i <= 6; i++)
+						{
+							if (attackedSquares.count({ i, 0 }))
 							{
-								possibleMoves.erase({6, 0});
+								possibleMoves.erase({ 6, 0 });
 								break;
 							}
 						}
 					}
 					if (getWhiteLongCastle())
 					{
-						for(int i = 1; i <= 4; i++){
-							if(attackedSquares.count({i, 0}))
+						for (int i = 1; i <= 4; i++)
+						{
+							if (attackedSquares.count({ i, 0 }))
 							{
-								possibleMoves.erase({2, 0});
+								possibleMoves.erase({ 2, 0 });
 								break;
 							}
 						}
@@ -460,20 +420,22 @@ void BoardState::removeIllegalCastling(PositionSet& possibleMoves, uint8_t piece
 				{
 					if (getBlackShortCastle())
 					{
-						for(int i = 4; i <= 6; i++){
-							if(attackedSquares.count({i, 7}))
+						for (int i = 4; i <= 6; i++)
+						{
+							if (attackedSquares.count({ i, 7 }))
 							{
-								possibleMoves.erase({6, 7});
+								possibleMoves.erase({ 6, 7 });
 								break;
 							}
 						}
 					}
 					if (getBlackLongCastle())
 					{
-						for(int i = 1; i <= 4; i++){
-							if(attackedSquares.count({i, 7}))
+						for (int i = 1; i <= 4; i++)
+						{
+							if (attackedSquares.count({ i, 7 }))
 							{
-								possibleMoves.erase({2, 7});
+								possibleMoves.erase({ 2, 7 });
 								break;
 							}
 						}
@@ -523,7 +485,8 @@ bool BoardState::checkForCheckmate()
 	return true;
 }
 
-void BoardState::loadFEN(const std::string& FEN){
+void BoardState::loadFEN(const std::string& FEN)
+{
 	int i = 0;
 
 	for (int y = 7; y >= 0; y--)
@@ -538,45 +501,36 @@ void BoardState::loadFEN(const std::string& FEN){
 			}
 			else
 			{
-				switch (FEN[i])
+				uint8_t pieceColor = (std::isupper(FEN[i])) ? Piece::white : Piece::black;
+				char pieceType = std::toupper(FEN[i]);
+
+				switch (pieceType)
 				{
 					case 'P':
-						board[y][x] = Piece::white | Piece::pawn;
-						break;
-					case 'p':
-						board[y][x] = Piece::black | Piece::pawn;
+						setPiece(x, y, pieceColor | Piece::pawn);
 						break;
 					case 'R':
-						board[y][x] = Piece::white | Piece::rook;
-						break;
-					case 'r':
-						board[y][x] = Piece::black | Piece::rook;
+						setPiece(x, y, pieceColor | Piece::rook);
 						break;
 					case 'B':
-						board[y][x] = Piece::white | Piece::bishop;
-						break;
-					case 'b':
-						board[y][x] = Piece::black | Piece::bishop;
+						setPiece(x, y, pieceColor | Piece::bishop);
 						break;
 					case 'N':
-						board[y][x] = Piece::white | Piece::knight;
-						break;
-					case 'n':
-						board[y][x] = Piece::black | Piece::knight;
+						setPiece(x, y, pieceColor | Piece::knight);
 						break;
 					case 'K':
-						board[y][x] = Piece::white | Piece::king;
-						setWhiteKing({x, y});
-						break;
-					case 'k':
-						board[y][x] = Piece::black | Piece::king;
-						setBlackKing({x, y});
+						setPiece(x, y, pieceColor | Piece::king);
+						if (pieceColor & Piece::white)
+						{
+							setWhiteKing({ x, y });
+						}
+						else if (pieceColor & Piece::white)
+						{
+							setBlackKing({ x, y });
+						}
 						break;
 					case 'Q':
-						board[y][x] = Piece::white | Piece::queen;
-						break;
-					case 'q':
-						board[y][x] = Piece::black | Piece::queen;
+						setPiece(x, y, pieceColor | Piece::queen);
 						break;
 				}
 				i++;
@@ -629,7 +583,7 @@ void BoardState::loadFEN(const std::string& FEN){
 		int x = int(FEN[i]) - 'a';
 		i++;
 		int y = int(FEN[i]) - '1';
-		setEnPassant({x, y});
+		setEnPassant({ x, y });
 	}
 	i++;
 }

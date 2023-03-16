@@ -22,6 +22,7 @@ uint8_t Piece::bishop;
 uint8_t Piece::knight;
 uint8_t Piece::rook;
 uint8_t Piece::pawn;
+uint8_t Piece::none;
 
 uint8_t Piece::pieceMask;
 uint8_t Piece::colorMask;
@@ -34,6 +35,7 @@ void Piece::init() {
 void Piece::loadTypes()
 {
 	//first 6 bits for type
+	none =		0b00000000;
 	pawn =		0b00000001;
 	knight =	0b00000010;
 	bishop =	0b00000100;

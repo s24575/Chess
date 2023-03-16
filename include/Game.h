@@ -37,8 +37,9 @@ private:
 	SDL_Color highlightLightColor = { 130, 151, 105, 0 };
 	SDL_Color highlightDarkColor = { 100, 111, 64, 0 };
 
-	BoardState::PositionSet legalMoves;
+	using PositionSet = BoardState::PositionSet;
+	using Position = BoardState::Position;
 
-	int movingPieceX = -1;
-	int movingPieceY = -1;
+	PositionSet legalMoves;
+	Position movingPiece = { -1, -1 };
 };

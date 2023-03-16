@@ -6,6 +6,8 @@
 class Piece
 {
 public:
+	Piece() = delete;
+
 	static void init();
 	static void destroyImages();
 
@@ -37,6 +39,7 @@ public:
 	static uint8_t knight;
 	static uint8_t rook;
 	static uint8_t pawn;
+	static uint8_t none;
 
 	static uint8_t pieceMask;
 	static uint8_t colorMask;
