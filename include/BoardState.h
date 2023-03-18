@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Piece.h"
+
 #include <stdint.h>
 #include <string>
 #include <utility>
@@ -36,6 +38,9 @@ public:
 	bool checkForCheckmate();
 
 public:
+	inline uint8_t getAllyColor(uint8_t piece) const { return piece & Piece::colorMask; }
+	inline uint8_t getEnemyColor(uint8_t piece) const { return (piece & Piece::colorMask) ^ Piece::colorMask; }
+
 	inline uint8_t getPiece(int x, int y) const { return board[y][x]; }
 	void setPiece(int x, int y, uint8_t piece) { board[y][x] = piece; }
 
@@ -67,10 +72,10 @@ private:
 	uint8_t currentTurn = 0;
 	uint8_t oppositeTurn = 0;
 
-	Position enPassant = { 0, 0 };
+	Position enPassant = { -1, -1 };
 
-	Position whiteKing = { 0, 0 };
-	Position blackKing = { 0, 0 };
+	Position whiteKing = { -1, -1 };
+	Position blackKing = { -1, -1 };
 
 	bool whiteShortCastle = false;
 	bool whiteLongCastle = false;

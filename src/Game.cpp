@@ -10,8 +10,10 @@
 #include <algorithm>
 #include <cmath>
 
+#include <chrono>
+
 static constexpr auto DEFAULT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-static constexpr auto TEST_FEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
+static constexpr auto TEST_FEN1 = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
 static constexpr auto TEST_FEN2 = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -";
 static constexpr auto TEST_FEN3 = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
 static constexpr auto TEST_FEN3_MIRRORED = "r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1";
@@ -25,15 +27,90 @@ Game::Game()
 
 void Game::init()
 {
-	currentBoardState.loadFEN(DEFAULT_FEN);
+	currentBoardState.loadFEN(TEST_FEN4);
 }
 
-void Game::printMoveCount()
+void Game::printMoveCount(int depth, BoardState& board)
 {
-	for (int i = 1; i <= 5; i++)
+	for (int i = 1; i <= depth; i++)
 	{
-		std::cout << currentBoardState.calculateLegalMovesCount(i) << '\n';
+		auto start_time = std::chrono::steady_clock::now();
+
+		int count = board.calculateLegalMovesCount(i);
+
+		auto end_time = std::chrono::steady_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+		std::cout << "Depth: " << i << " Moves: " << count << " (" << duration.count() << " ms)" << '\n';
 	}
+
+	std::cout << '\n';
+}
+
+void Game::printAllTestsMoveCount(int depth)
+{
+	auto printTestMoveCount = [&](int depth, const std::string& fen)
+	{
+		BoardState board;
+		board.loadFEN(fen);
+		std::cout << fen << '\n';
+		printMoveCount(depth, board);
+	};
+
+	printTestMoveCount(depth, DEFAULT_FEN);
+	printTestMoveCount(depth, TEST_FEN1);
+	printTestMoveCount(depth, TEST_FEN2);
+	printTestMoveCount(depth, TEST_FEN3);
+	printTestMoveCount(depth, TEST_FEN3_MIRRORED);
+	printTestMoveCount(depth, TEST_FEN4);
+	printTestMoveCount(depth, TEST_FEN5);
+}
+
+void Game::printCurrentMoveCount(int depth)
+{
+	printMoveCount(depth, currentBoardState);
+}
+
+void Game::printNextMoveCount()
+{
+	for (int y = 0; y < 8; y++)
+	{
+		for (int x = 0; x < 8; x++)
+		{
+			if (currentBoardState.getPiece(x, y) & currentBoardState.getCurrentTurn())
+			{
+				auto moves = currentBoardState.calculateLegalMoves(x, y);
+
+				for (Position move : moves)
+				{
+					BoardState copy(currentBoardState);
+
+					copy.movePiece(x, y, move.first, move.second);
+					int count = copy.calculateLegalMovesCount(1);
+
+					std::cout << (char)(x + 'a') << y + 1 << (char)(move.first + 'a') << (int)(move.second + 1) << ": " << count << '\n';
+				}
+			}
+		}
+	}
+
+}
+
+void Game::inputFEN()
+{
+	std::cout << "Please input a valid FEN position\n";
+	std::string fen;
+	std::getline(std::cin, fen);
+
+	if (fen == "exit")
+	{
+		std::cout << "Operation cancelled.\n";
+		return;
+	}
+
+	currentBoardState.loadFEN(fen);
+	
+	pickedUp = false;
 }
 
 void Game::refreshTile(int x, int y, bool highlight = false)
@@ -172,45 +249,36 @@ void Game::attemptPickupPiece(int x, int y)
 		if (!legalMoves.empty())
 		{
 			pickedUp = true;
-			movingPiece.first = x;
-			movingPiece.second = y;
+			movingPiece = { x, y };
 		}
 	}
 }
 
-void Game::attemptPlacePiece(int FinishX, int FinishY)
+void Game::attemptPlacePiece(int x, int y)
 {
+	Position target = { x, y };
 	pickedUp = false;
 
-	if (movingPiece.first == FinishX && movingPiece.second == FinishY)
+	if (movingPiece == target)
 		return;
 
-	if (currentBoardState.getPiece(FinishX, FinishY) & currentBoardState.getCurrentTurn())
+	if (currentBoardState.getPiece(x, y) & currentBoardState.getCurrentTurn())
 	{
-		attemptPickupPiece(FinishX, FinishY);
+		attemptPickupPiece(x, y);
 	}
-	else if (legalMoves.count({ FinishX, FinishY }))
+	else if (legalMoves.count(target))
 	{
-		currentBoardState.movePiece(movingPiece.first, movingPiece.second, FinishX, FinishY);
+		currentBoardState.movePiece(movingPiece.first, movingPiece.second, x, y);
 
-		bool isCheckmate = currentBoardState.checkForCheckmate();
-
-		if(isCheckmate){
-			if (currentBoardState.getOppositeTurn() & Piece::white)
+		if(currentBoardState.checkForCheckmate()){
+			if (currentBoardState.getCurrentTurn() & Piece::black)
 			{
 				std::cout << "White won!\n";
 			}
-			else if (currentBoardState.getOppositeTurn() & Piece::black)
+			else if (currentBoardState.getCurrentTurn() & Piece::white)
 			{
 				std::cout << "Black won!\n";
 			}
 		}
 	}
 }
-
-// highlight checks
-// ability to play as white or black
-// repetition
-// halfmoves
-// fullmoves
-// add an engine

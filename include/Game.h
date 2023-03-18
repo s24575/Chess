@@ -15,7 +15,13 @@ public:
 
 	void init();
 
-	void printMoveCount();
+	void printMoveCount(int depth, BoardState& board);
+	void printAllTestsMoveCount(int depth);
+	void printCurrentMoveCount(int depth);
+
+	void printNextMoveCount();
+
+	void inputFEN();
 
 	void refreshTile(int x, int y, bool highlight);
 	void refreshPiece(int x, int y);

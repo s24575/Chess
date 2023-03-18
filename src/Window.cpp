@@ -89,8 +89,15 @@ void Window::run()
 							m_Closed = true;
 							break;
 						case SDLK_r:
-							m_Game.printMoveCount();
+							m_Game.printCurrentMoveCount(4);
 							break;
+						case SDLK_t:
+							m_Game.printAllTestsMoveCount(4);
+							break;
+						case SDLK_f:
+							m_Game.inputFEN();
+						case SDLK_e:
+							m_Game.printNextMoveCount();
 					}
 					break;
 				case SDL_MOUSEBUTTONDOWN:
