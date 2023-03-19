@@ -27,7 +27,7 @@ Game::Game()
 
 void Game::init()
 {
-	currentBoardState.loadFEN(TEST_FEN4);
+	currentBoardState.loadFEN(DEFAULT_FEN);
 }
 
 void Game::printMoveCount(int depth, BoardState& board)

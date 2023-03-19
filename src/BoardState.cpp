@@ -396,9 +396,37 @@ void BoardState::removeIllegalCastling(PositionSet& possibleMoves, uint8_t piece
 	{
 		for (int x = 0; x < 8; x++)
 		{
-			if (getPiece(x, y) & getOppositeTurn())
+			uint8_t currentPiece = getPiece(x, y);
+
+			if (currentPiece & getOppositeTurn())
 			{
 				PositionSet attackedSquares = calculatePseudoLegalMoves(x, y);
+
+				if (currentPiece & Piece::pawn)
+				{
+					if (currentPiece & Piece::white)
+					{
+						if (x > 0 && y < 7)
+						{
+							attackedSquares.insert({ x - 1, y + 1 });
+						}
+						if (y < 7 && x < 7)
+						{
+							attackedSquares.insert({ x + 1, y + 1 });
+						}
+					}
+					else if (currentPiece & Piece::black)
+					{
+						if (0 < x && 0 < y)
+						{
+							attackedSquares.insert({ x - 1, y - 1 });
+						}
+						if (x < 7 && 0 < y)
+						{
+							attackedSquares.insert({ x + 1, y - 1 });
+						}
+					}
+				}
 
 				if (piece & Piece::white)
 				{
