@@ -34,11 +34,11 @@ void Game::printMoveCount(int depth, BoardState& board)
 {
 	for (int i = 1; i <= depth; i++)
 	{
-		auto start_time = std::chrono::steady_clock::now();
+		auto start_time = std::chrono::high_resolution_clock::now();
 
 		int count = board.calculateLegalMovesCount(i);
 
-		auto end_time = std::chrono::steady_clock::now();
+		auto end_time = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
 		std::cout << "Depth: " << i << " Moves: " << count << " (" << duration.count() << " ms)" << '\n';

@@ -2,7 +2,7 @@
 
 #include "Piece.h"
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <unordered_set>
@@ -27,9 +27,9 @@ public:
 	void loadFEN(const std::string& FEN);
 
 	int calculateLegalMovesCount(int n);
-
 	PositionSet calculatePseudoLegalMoves(int x, int y);
 	PositionSet calculateLegalMoves(int x, int y);
+
 	void checkForSpecialPawnMoves(int startY, int finishX, int finishY);
 	void checkForCastle(int x, int y);
 	void disableCastle(int x1, int y1, int x2, int y2);

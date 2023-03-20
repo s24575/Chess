@@ -75,7 +75,7 @@ void Window::run()
 	while (!m_Closed)
 	{
 		// INPUT/UPDATE
-		if (SDL_PollEvent(&event))
+		while (SDL_PollEvent(&event))
 		{
 			switch (event.type)
 			{
@@ -96,8 +96,10 @@ void Window::run()
 							break;
 						case SDLK_f:
 							m_Game.inputFEN();
+							break;
 						case SDLK_e:
 							m_Game.printNextMoveCount();
+							break;
 					}
 					break;
 				case SDL_MOUSEBUTTONDOWN:

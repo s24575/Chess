@@ -171,6 +171,7 @@
   <ItemGroup>
     <ClInclude Include="include\BoardState.h" />
     <ClInclude Include="include\Game.h" />
+    <ClInclude Include="include\Move.h" />
     <ClInclude Include="include\Piece.h" />
     <ClInclude Include="include\Window.h" />
   </ItemGroup>
